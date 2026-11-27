@@ -1,0 +1,14 @@
+numpy
+pandas
+scipy
+matplotlib
+pillow
+rasterio
+pyproj
+xarray
+h5netcdf
+h5py
+requests
+fonttools
+brotli
+ipykernel
