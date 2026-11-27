@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The water melts the ice</title>
+<meta name="description" content="How warmer Pacific water through the Bering Strait is shrinking Arctic sea ice: a 3D page of the flow from HYCOM ocean model currents over the IBCAO seabed, checked against 34 years of mooring measurements and 47 years of satellite sea ice.">
+<style>
+/* Fonts are stored next to this page (docs/fonts), both under the SIL Open Font License */
+@font-face { font-family: "Bricolage Grotesque"; src: url("fonts/bricolage-grotesque-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Bricolage Grotesque"; src: url("fonts/bricolage-grotesque-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Newsreader"; src: url("fonts/newsreader-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Newsreader"; src: url("fonts/newsreader-latin-400-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Newsreader"; src: url("fonts/newsreader-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+
+:root {
+  --ink: #1d2433;        /* body text */
+  --muted: #5b6474;      /* captions and notes */
+  --trail: #bfe0e3;      /* particle trails in the margin */
+  --head: #0f5f5c;       /* headings: Bering teal */
+  --flow: #0e6fa0;       /* measured flow, deep version of the page's cyan */
+  --model: #6b4fbf;      /* the model, deep version of the page's lavender */
+  --ice: #5d7f99;        /* sea ice */
+  --paper: #ffffff;
+  --rule: #e6e8ec;
+  --sans: "Bricolage Grotesque", "Segoe UI", Helvetica, Arial, sans-serif;
+  --serif: "Newsreader", Georgia, "Times New Roman", serif;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--serif); font-size: 19px; line-height: 1.65; }
+a { color: var(--head); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 2px; }
+a:focus-visible { outline: 3px solid var(--flow); outline-offset: 2px; border-radius: 2px; }
+
+/* ---------- Opening ---------- */
+.opening { max-width: 1080px; margin: 0 auto; padding: 56px 24px 24px; display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 48px; align-items: start; }
+.opening h1 { font-family: var(--sans); font-weight: 700; font-size: 3.2rem; line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 20px; color: var(--head); }
+.standfirst { font-size: 1.25rem; line-height: 1.5; margin: 0 0 24px; max-width: 34em; }
+.byline { font-family: var(--sans); font-weight: 600; font-size: 0.95rem; color: var(--muted); margin: 0 0 16px; }
+.links { list-style: none; margin: 0; padding: 0; font-family: var(--sans); font-weight: 600; font-size: 0.95rem; }
+.links li { margin: 6px 0; }
+.lead { margin: 0; }
+.lead img { display: block; width: 100%; height: auto; border: 1px solid var(--rule); }
+figcaption { font-size: 0.85rem; line-height: 1.45; color: var(--muted); margin-top: 8px; font-style: italic; }
+
+/* ---------- The margin: three particle trails drifting north, like the lines on the page ---------- */
+.line { max-width: 1080px; margin: 0 auto; padding: 8px 24px 64px; }
+.line-inner { position: relative; padding-left: 64px; max-width: 800px; margin-left: -64px; }
+.line-inner::before {
+  content: ""; position: absolute; left: 6px; top: 18px; bottom: 30px; width: 24px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='96'%3E%3Cg fill='none' stroke='%23bfe0e3' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M5 96 C 2 72, 9 56, 5 32 S 3 8, 5 0'/%3E%3Cpath d='M12 96 C 15 76, 9 52, 13 30 S 11 10, 12 0' opacity='0.7'/%3E%3Cpath d='M19 96 C 22 70, 16 50, 20 28 S 21 6, 19 0' opacity='0.5'/%3E%3C/g%3E%3C/svg%3E") center top / 24px 96px repeat-y;
+}
+section { position: relative; margin-top: 48px; }
+h2 { font-family: var(--sans); font-weight: 700; font-size: 1.6rem; line-height: 1.2; color: var(--head); margin: 0 0 12px; }
+h2::before { /* each section: a particle with its trail fading out behind it */
+  content: ""; position: absolute; left: -61px; top: 4px; width: 28px; height: 24px;
+  background:
+    radial-gradient(circle at 14px 5px, var(--head) 0 4.5px, transparent 5px),
+    linear-gradient(to top, rgba(15, 95, 92, 0), rgba(15, 95, 92, 0.55)) 12px 9px / 4px 15px no-repeat,
+    var(--paper);
+  border-radius: 2px;
+}
+h3 { font-family: var(--sans); font-weight: 600; font-size: 1.15rem; line-height: 1.3; margin: 32px 0 6px; position: relative; color: var(--ink); }
+h3::before { /* a small particle for each finding */
+  content: ""; position: absolute; left: -52px; top: 5px; width: 10px; height: 16px;
+  background:
+    radial-gradient(circle at 5px 4px, var(--head) 0 3.2px, transparent 3.7px),
+    linear-gradient(to top, rgba(15, 95, 92, 0), rgba(15, 95, 92, 0.5)) 4px 7px / 2px 9px no-repeat,
+    var(--paper);
+}
+h3.flow::before { background: radial-gradient(circle at 5px 4px, var(--flow) 0 3.2px, transparent 3.7px), linear-gradient(to top, rgba(14, 111, 160, 0), rgba(14, 111, 160, 0.5)) 4px 7px / 2px 9px no-repeat, var(--paper); }
+h3.model::before { background: radial-gradient(circle at 5px 4px, var(--model) 0 3.2px, transparent 3.7px), linear-gradient(to top, rgba(107, 79, 191, 0), rgba(107, 79, 191, 0.5)) 4px 7px / 2px 9px no-repeat, var(--paper); }
+h3.ice::before { background: radial-gradient(circle at 5px 4px, var(--ice) 0 3.2px, transparent 3.7px), linear-gradient(to top, rgba(93, 127, 153, 0), rgba(93, 127, 153, 0.5)) 4px 7px / 2px 9px no-repeat, var(--paper); }
+p { margin: 0 0 14px; max-width: 40em; }
+.figure-line { font-family: var(--sans); margin: 4px 0 10px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.figure-line b { font-weight: 700; font-size: 2rem; line-height: 1; color: var(--head); }
+.figure-line.flow b { color: var(--flow); }
+.figure-line.model b { color: var(--model); }
+.figure-line.ice b { color: var(--ice); }
+.figure-line span { font-weight: 600; font-size: 0.95rem; color: var(--muted); }
+ul.plain { margin: 0 0 14px; padding-left: 1.1em; max-width: 40em; }
+ul.plain li { margin: 6px 0; }
+.wide { margin: 18px 0 8px; }
+.wide img { display: block; width: 100%; height: auto; border: 1px solid var(--rule); }
+.wide.chart a { display: block; cursor: zoom-in; }
+table { border-collapse: collapse; font-family: var(--sans); font-size: 0.92rem; margin: 8px 0 16px; }
+th, td { text-align: left; padding: 6px 18px 6px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 600; color: var(--muted); }
+.table-wrap { overflow-x: auto; max-width: 100%; }
+.takeaway { border-left: 4px solid var(--head); padding: 10px 0 10px 16px; background: #f1f7f7; max-width: 40em; }
+.takeaway b { font-family: var(--sans); color: var(--head); }
+.terminus { max-width: none; margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--rule); font-size: 0.9rem; color: var(--muted); }
+
+/* ---------- Chart pop-out: a click opens the chart over the page, a click or Esc closes it ---------- */
+#zoom { position: fixed; inset: 0; z-index: 50; background: rgba(20, 24, 32, 0.82); display: none; align-items: center; justify-content: center; padding: 24px; cursor: zoom-out; }
+#zoom.on { display: flex; }
+#zoom img { max-width: 100%; max-height: 100%; background: #fff; border-radius: 4px; box-shadow: 0 6px 30px rgba(0,0,0,0.5); }
+#zoom .close { position: absolute; top: 14px; right: 18px; font-family: var(--sans); font-weight: 600; font-size: 0.95rem; color: #fff; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.5); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+
+/* ---------- Narrow screens ---------- */
+@media (max-width: 900px) {
+  .opening { grid-template-columns: 1fr; gap: 28px; padding-top: 32px; }
+  .opening h1 { font-size: 2.4rem; }
+  .lead { max-width: 420px; }
+  .line-inner { margin-left: 0; }
+}
+@media (max-width: 560px) {
+  body { font-size: 17px; }
+  .opening, .line { padding-left: 16px; padding-right: 16px; }
+  .line-inner { padding-left: 36px; }
+  .line-inner::before { left: 0; width: 18px; background-size: 18px 72px; }
+  h2::before { left: -38px; transform: scale(0.72); transform-origin: left top; }
+  h3::before { left: -30px; }
+  table { font-size: 0.85rem; }
+  th, td { padding-right: 10px; }
+}
+
+/* ---------- PDF and printing ---------- */
+@page { size: A4; margin: 16mm 15mm 16mm 15mm; }
+@media print {
+  #zoom { display: none !important; }
+  body { font-size: 10pt; line-height: 1.4; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  a { color: var(--ink); text-decoration: none; }
+  .opening { grid-template-columns: minmax(0, 1fr) 72mm; gap: 8mm; padding: 0 0 4mm; max-width: none; }
+  .opening h1 { font-size: 24pt; margin-bottom: 3mm; }
+  .standfirst { font-size: 11.5pt; margin-bottom: 3mm; }
+  .web-link { display: none; }
+  .line { padding: 0; max-width: none; }
+  .line-inner { max-width: none; margin-left: 0; }
+  section { margin-top: 3mm; }
+  p, ul.plain li { orphans: 3; widows: 3; }
+  h2 { font-size: 15pt; break-after: avoid; }
+  h3 { font-size: 11.5pt; margin-top: 4mm; break-after: avoid; }
+  .figure-line b { font-size: 17pt; }
+  .wide { break-inside: avoid; }
+  .wide img { max-height: 60mm; width: auto; max-width: 100%; }
+  .wide.chart img { max-height: 37mm; width: auto; max-width: 100%; height: auto; }
+  .wide.chart.first img { max-height: 31mm; }
+  .wide.chart.first { break-inside: auto; }
+  .wide.chart.first a { break-inside: avoid; }
+  .takeaway { padding: 2mm 0 2mm 4mm; }
+  figcaption { font-size: 8pt; margin-top: 1mm; }
+  .wide { margin: 2mm 0 2mm; }
+  .wide.shot img { max-height: 40mm; }
+  .wide.shot.web-only { display: none; }   /* the page picture stays on the web; the PDF has the lead and the pair */
+  .wide.pair img { max-height: 31mm; width: auto; max-width: 100%; height: auto; }
+  tr:first-child { break-after: avoid; }
+  table { break-inside: avoid; font-size: 8.4pt; margin: 1mm 0 3mm; }
+  table.list { break-inside: auto; }
+  tr { break-inside: avoid; }
+  .figure-line { break-inside: avoid; }
+  .table-wrap { overflow: visible; }
+  th, td { padding: 1mm 4mm 1mm 0; }
+  .figure-line span { font-size: 9pt; }
+  .terminus { margin-top: 2mm; padding-top: 1.5mm; font-size: 8pt; line-height: 1.3; }
+  .links a[href^="http"]::after { content: " (" attr(href) ")"; font-weight: 400; color: var(--muted); }
+}
+</style>
+</head>
+<body>
+
+<header class="opening">
+  <div>
+    <h1>The water melts the ice</h1>
+    <p class="standfirst">How warmer Pacific water through the Bering Strait is shrinking Arctic sea ice. Over three decades, more water has come north through the strait, and warmer: 29% more flow and about twice the heat since 1991. In the years when it carries the most heat, the Chukchi Sea freezes latest. This project draws that water over the real seabed and checks it against 35 years of measurements in the strait and 47 years of sea ice seen from space.</p>
+    <p class="byline">Lik Ren Tai, November 2026</p>
+    <ul class="links">
+      <li><a href="https://likrentai.github.io/beringstrait/">Open the page</a></li>
+      <li><a href="https://github.com/likrentai/beringstrait">Code, notebooks and data notes on GitHub</a></li>
+      <li class="web-link"><a href="case-study.pdf">Download this case study as a PDF</a></li>
+    </ul>
+  </div>
+  <figure class="lead">
+    <img src="images/cs_lead.jpg" width="800" height="450" alt="The Bering Strait from high above the Bering Sea, looking north: thousands of short coloured trails of water squeeze through the narrow gap between Chukotka on the left and Alaska on the right and fan out into the Chukchi Sea. Trails on the Alaskan side are red and orange, warm water; trails on the Russian side are blue and green, cooler water">
+    <figcaption>August 2019, the year of the highest measured flow: model water at all depths, coloured by temperature, from blue (&minus;2 &deg;C) to red (10 &deg;C). The warm Alaskan Coastal Current runs up the east side of the strait.</figcaption>
+  </figure>
+</header>
+
+<main class="line">
+<div class="line-inner">
+
+<section>
+  <h2>The question</h2>
+  <p>The Bering Strait is the Pacific's only doorway into the Arctic: 82 km wide and only about 50 m deep. About a million cubic metres of water pass through it every second, northward on average, warmer and fresher than Arctic water. North of the strait, the Chukchi Sea has lost much of its sea ice.</p>
+  <p>The project set out with one question: how has the flow through the strait been affected by the melting of the ice over the years? It is not a research project; the aim was to see whether open data, put together and looked at carefully, would reinforce what scientists have found. The answer turned the question around.</p>
+</section>
+
+<section>
+  <h2>What we found</h2>
+
+  <h3 class="flow">More water, and warmer</h3>
+  <div class="figure-line flow"><b>+29% and &times;2</b><span>the measured trend in the yearly flow (0.85 to 1.09 Sv, 1991 to 2024) and in the heat it carries north (5 to 11 TW)</span></div>
+  <p>The flow goes up and down from year to year, from 0.68 Sv in 2001 to 1.26 Sv in 2019 (1 Sv is a million cubic metres a second), but the trend is up by 0.075 Sv a decade. The water has also warmed, by about 0.8 &deg;C in the yearly mean on the trend line, so the heat carried through the strait has roughly doubled. Over the same years the ice in the map area has changed most in November: the freeze-up comes later, and November ice has fallen by about two thirds on the trend line.</p>
+  <figure class="wide chart first">
+    <a href="images/cs_flowice.png" title="Enlarge the chart"><img src="images/cs_flowice.png" width="1364" height="695" alt="Two stacked charts sharing a time axis from 1978 to 2030. Top: the yearly mean northward flow through the Bering Strait from 1991 to 2024 with error bars, rising from about 0.8 to 1.1 Sv along a dashed trend line, with a gap from 1992 to 1997 and the highest value, 1.26 Sv, in 2019. Bottom: sea ice area in the map area for May, August and November from 1979 to 2025; May stays near 550 thousand km&sup2; with a dip in 2017 to 2019, August falls to almost zero after 2002, and November falls from about 400 to 500 thousand km&sup2; in the 1980s to under 150 in several recent years"></a>
+    <figcaption>Measured flow at mooring A3 (top) and sea ice in the map area (bottom). UW moorings; NOAA/NSIDC CDR v6. <span class="web-link">Click a chart to enlarge it; click again or press Esc to close.</span></figcaption>
+  </figure>
+
+  <h3>Heat in, ice out</h3>
+  <div class="figure-line"><b>r = &minus;0.86</b><span>between the heat carried north from June to November and the November ice, over 28 years; &minus;0.82 with both long-term trends removed</span></div>
+  <p>Both rising together could be a coincidence of two trends, so the trends were removed and the years compared again. The link stays: the years with the most heat coming through the strait in summer and autumn are the years with the least ice in November. Heat alone matches about two thirds of the year-to-year differences in November ice. 2017, 2018 and 2019 carried the most heat on record, about 24 to 25 TW from June to November, and had among the least November ice: about 80 to 130 thousand km&sup2;, against 540 in 2001. The timing points one way: a year's flow says little about the next spring's ice, but its summer heat says a lot about the same autumn's freeze-up.</p>
+  <figure class="wide chart">
+    <a href="images/cs_heatice.png" title="Enlarge the chart"><img src="images/cs_heatice.png" width="1459" height="769" alt="A scatter chart with one dot per year from 1991 to 2024. Across: the heat carried north through the strait, June to November mean, from about 8 to 25 TW. Up: November sea ice in the map area, from about 60 to 540 thousand km&sup2;. The dots fall from top left to bottom right along a dashed line: 2001 and 2012 have little heat and much ice; 2017, 2018 and 2019 have the most heat and among the least ice; 2020 has the least ice. Darker dots are more recent years and sit mostly at the bottom right. r = -0.86, and -0.82 with both trends removed"></a>
+    <figcaption>One dot per year: heat flux through the strait at mooring A3 (relative to &minus;1.9 &deg;C, June to November mean) against November sea ice in the map area. Darker dots are later years. University of Washington moorings; NOAA/NSIDC CDR v6.</figcaption>
+  </figure>
+
+  <h3 class="model">Which way the arrow points</h3>
+  <p>A correlation does not say which way the influence runs, and the same winds can both push water north and hold the ice back. Published research answers the direction. Margevich, Timmermans and Danielson (2024) tested whether losing the ice has changed the flow, and found that it has not: the increase comes from changes in the ocean and atmosphere far from the strait, a growing difference in sea level between the Pacific and the Arctic (Peralta-Ferriz and Woodgate 2023). The other direction is well established: the heat coming through the strait is the strongest single predictor of when the Chukchi ice retreats in spring and, with the retreat date, explains about two thirds of when it returns in autumn (Serreze and others, 2016). Woodgate and colleagues describe this heat as a trigger for the melt.</p>
+  <p class="takeaway"><b>The takeaway.</b> The Bering Strait is not a victim of the melting ice; it is one of the reasons the ice is melting. More and warmer Pacific water now flows north, about twice the heat of 1991, and in the years when the strait carries the most warmth in summer and autumn, the Chukchi Sea freezes latest. As the climate warms, the Arctic is not only melting where it stands; it is being warmed from the south, through a gap 82 km wide and 50 m deep. This project found the same with open data and a laptop: it does not add new science, but it shows the published picture holds when the raw measurements are put side by side.</p>
+</section>
+
+<section>
+  <h2>The data</h2>
+  <div class="table-wrap"><table class="list">
+    <tr><th>What</th><th>Source</th><th>Used for</th></tr>
+    <tr><td>Ocean currents and water temperature, every 2 days, top 100 m</td><td>HYCOM GOFS 3.1: reanalysis GLBv0.08 (1995 to 2015) and analysis GLBy0.08 (2019 to 2023)</td><td>The moving particles and their colours, and the model side of the comparison</td></tr>
+    <tr><td>Flow, temperature and near-bottom current in the strait, 1990 to 2025</td><td>Bering Strait moorings, R. Woodgate, University of Washington</td><td>The measured flow chart and the model check</td></tr>
+    <tr><td>Monthly sea ice concentration, 25 km grid, 1979 to 2026</td><td>NOAA/NSIDC Climate Data Record of passive microwave sea ice concentration, version 6, via NOAA CoastWatch ERDDAP</td><td>The ice on the map and the ice chart</td></tr>
+    <tr><td>Seabed and land heights, 200 m grid</td><td>IBCAO 5.2 (International Bathymetric Chart of the Arctic Ocean)</td><td>The 3D seabed under the water</td></tr>
+    <tr><td>Coastlines of the North Pacific and the Arctic</td><td>Natural Earth, 1:50 million</td><td>The small "where you are looking" map</td></tr>
+  </table></div>
+</section>
+
+<section>
+  <h2>One page, fourteen notebooks</h2>
+  <p>The page is a single 3D view of the strait and the Chukchi Sea. The reader picks a year and a month, which water to show and how to colour it; two viewpoints fly the camera to an overview and a close-up, and the mouse and keyboard move it freely. Beside the view, three charts give the measured flow, the model against the measurements for the month shown, and the sea ice, with the finding above them.</p>
+  <figure class="wide shot web-only">
+    <img src="images/cs_page.jpg" width="800" height="475" alt="The page: the 3D strait in the centre with coloured trails of water; on the left a panel with the title, the one-line finding, the measured flow chart and the start of the model and measurements table for August 2019; on the right buttons for viewpoints, which water, colour, year and month; bottom right a small map of the North Pacific and the Arctic with a white box over the Bering Strait and a red camera wedge">
+    <figcaption>The page in August 2019, with the finding and charts on the left, the controls on the right and the "where you are looking" map.</figcaption>
+  </figure>
+  <div class="table-wrap"><table class="list">
+    <tr><th>Notebook</th><th>What it does</th></tr>
+    <tr><td>00bathymetry, 01webterrain</td><td>Cut the 3.4 GB IBCAO grid to the Bering and Chukchi seas and turn it into a height image and a coloured texture for the web.</td></tr>
+    <tr><td>02hycomdownload, 02a to 02g</td><td>Download the model currents and temperature, one notebook per year (61 or 62 snapshots each, 35 to 85 seconds a snapshot).</td></tr>
+    <tr><td>03moorings</td><td>Read the University of Washington yearly and monthly means and draw the measured trend.</td></tr>
+    <tr><td>04hycommonthly</td><td>Average the snapshots for each month, sum the flow across the strait and pull out the model values at the mooring site.</td></tr>
+    <tr><td>05particles</td><td>Release about 8,000 particles a month and move them through the changing currents, hour by hour, into compact track files (2.1 MB a month).</td></tr>
+    <tr><td>06seaice</td><td>Download 47 years of monthly sea ice and turn each month into a white sheet on the page's grid.</td></tr>
+  </table></div>
+  <p>The page runs on deck.gl: its TerrainLayer draws the seabed and the land, and the particles are drawn as moving trails with its TripsLayer.</p>
+</section>
+
+<section>
+  <h2>What the page shows</h2>
+
+  <h3 class="ice">The same month, twenty years apart</h3>
+  <div class="figure-line ice"><b>398 and 66</b><span>thousand km² of sea ice in the map area in November 2000 and November 2020</span></div>
+  <p>On the page, the same view in the same month tells the story at a glance. In November 2000 the ice already covered the northern Chukchi Sea and the coasts, and the water coming through the strait was cool. In November 2020, after a summer and autumn with high heat coming through the strait, the sea was still open in late autumn: the November ice in the map area was the lowest in the 47-year record.</p>
+  <figure class="wide pair">
+    <img src="images/cs_pair.jpg" width="1612" height="450" alt="Two views of the strait from the same point. Left, November 2000: a white sheet of sea ice covers the top of the picture and the coasts, and blue and pale yellow trails of water flow through the strait and spread under the ice edge. Right, November 2020: almost no ice, only a few frozen lagoons on the coasts, and dense blue and yellow trails fill the open Chukchi Sea">
+    <figcaption>The overview in November 2000 (left; 398 thousand km&sup2; of ice in the map area) and November 2020 (right; 66 thousand km&sup2;). Ice from NOAA/NSIDC CDR v6; water from HYCOM.</figcaption>
+  </figure>
+
+  <h3 class="model">Model against measurement</h3>
+  <div class="figure-line model"><b>0.10 Sv</b><span>the average gap between the model and the measured flow in the same month in 2019, 2020 and 2023, against 0.18 Sv in 2000 to 2015</span></div>
+  <p>Before trusting the moving water on the page, the model was checked against the moorings for every month with measurements: 28 months in seven years. It follows the seasons and the ups and downs from year to year, including the weak winter of 2020 and the strong February of 2019 (1.90 Sv in the model, 2.17 measured). The older reanalysis years run a little high, by 0.07 Sv on average, about what the Alaskan Coastal Current adds to the model but not to the mooring figure; the newer analysis years sit closer. The model's weak point is temperature near the seabed: in August it is 1 to 4 &deg;C too warm in every year, likely because it mixes warm surface water down too far. The page says so beside the temperature colours.</p>
+  <figure class="wide chart">
+    <a href="images/cs_model.png" title="Enlarge the chart"><img src="images/cs_model.png" width="1345" height="733" alt="Two square scatter charts of model against measured values for 28 months from 2000 to 2023, with a grey line for a perfect match. Left, flow through the strait: the points lie close to the line from about -0.3 to 2.2 Sv, slightly above it in the older years, with November 2005 at the bottom left where both are negative. Right, water temperature near the seabed: February and May points lie on the line near -1.7 to -0.6 degrees, while August points lie 1 to 4 degrees above it, in a shaded band marked model more than 1 degree too warm"></a>
+    <figcaption>Model against measured for every month with measurements in the same month (2000 to 2023). Left: the flow through the strait; right: the water temperature near the seabed at mooring A3. The grey line is a perfect match.</figcaption>
+  </figure>
+
+  <h3>When the strait runs backwards</h3>
+  <div class="figure-line"><b>&minus;0.23 Sv</b><span>the measured flow in November 2005, one of the few months in 35 years when more water went south than north</span></div>
+  <p>Strong northerly winds in autumn can push the water back towards the Pacific for days at a time. In November 2005 they did so often enough that the whole month ran south, and December followed. The model shows the same: &minus;0.32 Sv for the month, with the particles on the page flowing south through the strait. In every November the model's snapshots swing by more than a sverdrup, and four to nine of the fifteen run south.</p>
+</section>
+
+<section>
+  <h2>How the water is drawn</h2>
+  <p>Each month, about 8,000 particles are released, half of them within 220 km of the strait, each at a random share of the local water depth. Each drifts for 3 to 8 days through the model currents, which change every 2 days and are blended in between, keeping its share of the depth, as the model gives no useful up and down currents. On the page, each particle is a short trail whose length is set in hours, so short trails mean slow water; one model day plays in 3 seconds.</p>
+  <p>The seabed is exaggerated 40 times and the land 4 times, as the page says; the ice is a white sheet from the satellite concentration of the month.</p>
+</section>
+
+<section>
+  <h2>Problems in the data, and how they were handled</h2>
+  <ul class="plain">
+    <li><b>Two model runs.</b> The HYCOM reanalysis ends in 2015; later years come from the operational analysis, a different model run. Both use the same grid here, cell for cell, but a jump between 2015 and 2019 may come partly from the switch. The page marks the analysis years with dashed buttons and a dividing line in the comparison chart.</li>
+    <li><b>No measurements in 1995.</b> The moorings have a gap from 1992 to 1997, so 1995 is compared with the average of all years for each month and shown as a hollow circle.</li>
+    <li><b>Different things measured.</b> The mooring flow leaves out the Alaskan Coastal Current (about 0.1 Sv) and is measured near the bottom at one site; the model flow is summed across the whole width of the strait at its narrowest. The model should sit a little higher, and in the reanalysis years it does.</li>
+    <li><b>Downloads that do not subset.</b> The HYCOM server returns all 40 depth levels, so each snapshot was 3 to 4 times larger than needed; the downloads were split into one notebook per year, each safe to stop and restart.</li>
+    <li><b>Camera controls that did not move.</b> deck.gl's first-person controls move the camera 20 m per key press, invisible from 260 km up. The page replaced them with its own, with steps scaled to the camera's height.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Limits</h2>
+  <p>The finding rests on correlations over 28 years at one mooring site and one map area; the direction of the link comes from published studies, not from this project. The heat values leave out the Alaskan Coastal Current, the warmest part of the inflow, and the 25 km ice grid is too coarse for the strait itself. The particles are drawn from a model, not observed, with no vertical motion and lives of days, not the months the water takes to cross the Chukchi Sea; the model's near-bottom water is too warm in summer. Eight years are shown, four months each.</p>
+</section>
+
+<section>
+  <h2>Where this could be useful</h2>
+  <ul class="plain">
+    <li><b>Teaching:</b> the three branches of Pacific water across the Chukchi Sea, and why a strait 50 m deep matters to the Arctic, are easier to see than to read.</li>
+    <li><b>Model checking in public:</b> the page puts a model beside the measurements month by month, a habit that rarely reaches readers outside science.</li>
+    <li><b>Other straits:</b> the same open-data pipeline could show the flow through Fram Strait, the Strait of Gibraltar or the Korea Strait.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>About</h2>
+  <p>Lik Ren Tai applies data science in two fields: environmental science and railway systems. This project was built with Python (xarray, NumPy, pandas, rasterio, matplotlib) and deck.gl, with its TerrainLayer for the seabed and TripsLayer for the moving water.</p>
+  <p class="terminus">Currents and temperature: HYCOM GOFS 3.1, HYCOM consortium. Measured flow: Bering Strait mooring data, R. A. Woodgate, University of Washington (Woodgate, Stafford and Prahl 2015, Oceanography 28(3); Woodgate 2018, Progress in Oceanography 160). Sea ice: NOAA/NSIDC Climate Data Record of Passive Microwave Sea Ice Concentration, version 6 (doi:10.7265/b18j-z797), via NOAA CoastWatch ERDDAP. Seabed: IBCAO 5.2. Coastlines: Natural Earth. Studies cited: Serreze, Crawford, Stroeve, Barrett and Woodgate (2016), J. Geophys. Res. Oceans 121; Margevich, Timmermans and Danielson (2024), J. Geophys. Res. Oceans 129; Peralta-Ferriz and Woodgate (2023), Geophys. Res. Lett. 50; Woodgate, Weingartner and Lindsay (2010), Geophys. Res. Lett. 37. This is an independent project, not affiliated with or endorsed by any of the sources.</p>
+</section>
+
+</div>
+</main>
+<div id="zoom" role="dialog" aria-label="Enlarged chart"><button class="close" type="button">Close</button><img alt=""></div>
+<script>
+(function () {
+  const box = document.getElementById("zoom");
+  const big = box.querySelector("img");
+  function close() { box.classList.remove("on"); big.removeAttribute("src"); }
+  document.querySelectorAll(".wide.chart a").forEach(function (a) {
+    a.addEventListener("click", function (e) {
+      e.preventDefault();
+      big.src = a.getAttribute("href");
+      big.alt = a.querySelector("img").alt;
+      box.classList.add("on");
+    });
+  });
+  box.addEventListener("click", close);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+})();
+</script>
+</body>
+</html>

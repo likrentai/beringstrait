@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bering Strait: Pacific water flowing into the Arctic</title>
+<script src="https://unpkg.com/deck.gl@9.4.1/dist.min.js"></script>
+<style>
+  :root { --panel: rgba(8, 24, 36, 0.86); --text: #e6edf3; --muted: #9fb7c6; --accent: #7fd3e6; --warn: #f0b35a; }
+  html, body { margin: 0; height: 100%; background: #06222e; color: var(--text); font-family: "Segoe UI", Helvetica, Arial, sans-serif; overflow: hidden; }
+  #map { position: absolute; inset: 0; }
+  .panel { position: absolute; z-index: 10; background: var(--panel); border-radius: 8px; padding: 12px 14px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35); }
+  #info { top: 14px; left: 14px; width: 320px; max-height: calc(100vh - 28px); overflow-y: auto; }
+  #info h1 { font-size: 17px; margin: 0 0 6px; }
+  #info p { font-size: 12.5px; line-height: 1.45; margin: 6px 0; color: var(--muted); }
+  #info p.warn { color: var(--warn); font-weight: 600; }
+  #views { top: 14px; right: 14px; display: flex; flex-direction: column; gap: 6px; box-sizing: border-box; }
+  #views > * { flex-shrink: 0; }
+  #views .title { font-size: 12px; color: var(--muted); }
+  button { background: #12405a; color: var(--text); border: 1px solid #2a6a8c; border-radius: 5px; padding: 6px 10px; font-size: 13px; cursor: pointer; text-align: left; }
+  button:hover { background: #1a5576; }
+  button.on { background: #2a7fa6; border-color: var(--accent); }
+  #corner { position: absolute; z-index: 10; bottom: 14px; right: 14px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  #corner .panel { position: static; }
+  #depth { font-size: 13px; padding: 8px 12px; }
+  #inset { padding: 8px 10px 6px; }
+  #inset .ititle { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  #inset .inote { font-size: 10.5px; color: var(--muted); margin-top: 3px; max-width: 270px; line-height: 1.35; }
+  #inset svg text { paint-order: stroke; stroke: rgba(6,22,32,0.85); stroke-width: 2.4px; stroke-linejoin: round; }
+  #inset svg { display: block; border-radius: 4px; }
+  .legend { margin-top: 6px; font-size: 11px; color: var(--muted); }
+  .legend .bar { height: 8px; border-radius: 4px; background: linear-gradient(90deg, rgb(150,245,255), rgb(255,220,140)); }
+  .legend .ends { display: flex; justify-content: space-between; margin-top: 2px; }
+  .legend .tempbar { background: linear-gradient(90deg, rgb(90,110,255), rgb(120,230,255) 33%, rgb(255,220,120) 67%, rgb(255,100,70)); }
+  .row { display: flex; gap: 4px; }
+  .row button { flex: 1; text-align: center; padding: 6px 4px; }
+  #yearButtons { flex-wrap: wrap; }
+  #yearButtons button { flex: 1 0 21%; }
+  #yearButtons button.analysis { border-style: dashed; }
+  .chart { margin-top: 8px; }
+  .chart .ctitle { font-size: 12.5px; font-weight: 600; color: var(--text); }
+  .chart .cnote { font-size: 11px; line-height: 1.4; color: var(--muted); margin: 3px 0 0; }
+  .chart svg { display: block; margin-top: 4px; }
+  .chart svg text { font-family: inherit; }
+  .finding { border-left: 3px solid var(--accent); padding: 4px 0 4px 10px; margin: 6px 0 10px; color: var(--text); font-weight: 600; line-height: 1.45; }
+  table.mvm { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 11.5px; }
+  table.mvm th { font-weight: 600; color: var(--muted); text-align: right; padding: 2px 3px; border-bottom: 1px solid rgba(255,255,255,0.15); }
+  table.mvm th:first-child, table.mvm td:first-child { text-align: left; }
+  table.mvm td { text-align: right; padding: 3px 3px; color: var(--text); border-bottom: 1px solid rgba(255,255,255,0.06); }
+  table.mvm td.model { color: #c9a8ff; }
+  table.mvm td.meas { color: var(--accent); }
+  table.mvm td.off { color: var(--warn); font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div id="info" class="panel">
+  <h1>Bering Strait: Pacific water flowing into the Arctic</h1>
+  <p class="finding">More and warmer Pacific water now flows north through the strait, about twice the heat of 1991, and the years with the most heat are the years the Chukchi Sea freezes latest. <a href="#foundBlock" style="color: var(--accent); white-space: nowrap">What we found &darr;</a></p>
+  <p>Each line is a particle of water moving with the currents of the HYCOM ocean model (<span id="modelKind">reanalysis</span>), month by month in <span id="yearText"></span>. The currents change every two days. Particles keep their depth (as a share of the local water depth); the model gives no up and down currents.</p>
+  <p id="clock" class="warn"></p>
+  <p id="exagNote"></p>
+  <p>Seabed: IBCAO 5.2 (2026), averaged to 1 km.</p>
+  <div id="chart" class="chart">
+    <div class="ctitle">Measured flow through the strait, 1991 to 2024 (Sv)</div>
+    <svg id="chartSvg" width="292" height="130"></svg>
+    <p class="cnote">Yearly mean northward flow at mooring A3 (Woodgate, University of Washington), without the Alaskan Coastal Current (about 0.1 Sv more). 1 Sv = one million cubic metres per second. Dashed line: straight-line trend, <span id="trendText"></span>. The red line marks the year in the animation. No measurements 1992 to 1997, so 1995 is model only.</p>
+  </div>
+  <div id="mvmBlock" class="chart">
+    <div class="ctitle" id="mvmTitle"></div>
+    <table class="mvm" id="mvmTable"></table>
+    <p class="cnote" id="mvmNote"></p>
+    <svg id="mvmSvg" width="292" height="120"></svg>
+    <p class="cnote">Model: HYCOM (reanalysis to 2015, analysis for 2019, 2020 and 2023; dashed line), mean of the snapshots every 2 days; bars show ± one standard deviation of the snapshots (cut at the chart edge). Measured: mooring A3 (Woodgate, University of Washington), monthly means; hollow circle = no measurements that year, average of all years. The model flow is summed across the narrowest part of the strait and includes the Alaskan Coastal Current (about 0.1 Sv), which the measured value leaves out, so the model should sit a little higher. Bottom current and temperature are compared at the A3 site.</p>
+  </div>
+  <div id="iceChart" class="chart" style="display:none">
+    <div class="ctitle" id="iceTitle"></div>
+    <svg id="iceSvg" width="292" height="110"></svg>
+    <p class="cnote">Monthly mean sea ice area in the whole map window (<span id="iceWater"></span> thousand km² of sea), measured by satellite: NOAA/NSIDC sea ice concentration record, version 6, 25 km grid. Dashed line: trend, <span id="iceTrendText"></span>. The white sheet on the map is the same data for the month shown (smoothed; coasts and the narrow strait are only roughly right at 25 km).</p>
+  </div>
+  <div class="chart" id="foundBlock">
+    <div class="ctitle">What we found</div>
+    <p class="cnote"><b>The question:</b> how has the flow through the Bering Strait been affected by the melting of the sea ice? <b>The answer turned the question around:</b> the ice has not changed the flow; the flow, through the heat it carries, changes the ice.</p>
+    <p class="cnote"><b>1. More water, and warmer.</b> Measured at the moorings, the yearly flow rose 29% from 1991 to 2024 (0.85 to 1.09 Sv), the water warmed by about 0.8 &deg;C, and the heat carried north about doubled (5 to 11 TW). November sea ice in this map area fell by about two thirds.</p>
+    <p class="cnote"><b>2. Heat in, ice out.</b> Year by year, the heat coming through from June to November matches the ice in November closely (r = &minus;0.86 over 28 years; &minus;0.82 with both trends removed): the years with the most heat, 2017 to 2019, froze latest. Heat alone matches about two thirds of the differences between years.</p>
+    <p class="cnote"><b>3. The arrow points from water to ice.</b> Published studies find that losing the ice has not changed the flow, which is driven by the ocean and atmosphere far from the strait (Margevich, Timmermans and Danielson 2024; Peralta-Ferriz and Woodgate 2023), while the heat through the strait times the spring melt and the autumn freeze-up (Serreze and others 2016).</p>
+    <p class="cnote" style="color: var(--text)"><b>Takeaway:</b> the Bering Strait is not a victim of the melting ice; it is one of the reasons the ice is melting. As the climate warms, the Arctic is being warmed from the south, through a gap 82 km wide and 50 m deep. This page does not add new science; it shows the published picture holds when the open measurements are put side by side.</p>
+  </div>
+  <div class="chart" id="aboutBlock">
+    <div class="ctitle">About this page</div>
+    <p class="cnote">A recreation from open data, not research: everything that moves or is measured on this page comes from a named dataset. Currents and water temperature: HYCOM GOFS 3.1 (HYCOM consortium), reanalysis GLBv0.08 for 1995 to 2015 and analysis GLBy0.08 for 2019, 2020 and 2023. Measured flow: Bering Strait moorings, R. Woodgate, University of Washington (Woodgate, Stafford and Prahl 2015; Woodgate 2018). Sea ice: NOAA/NSIDC Climate Data Record of passive microwave sea ice concentration, version 6. Seabed and land: IBCAO 5.2. Inset map: Natural Earth. The particles are drawn by this page from the model currents (5 to 8 day tracks); they are not observed drifters.</p>
+    <p class="cnote" id="caseStudyLink" style="display:none"><a href="case-study.html" style="color: var(--accent)">Case study: how this page was made</a></p>
+  </div>
+</div>
+
+<div id="views" class="panel">
+  <div class="title">Viewpoints</div>
+  <button id="v_over">1. Overview: where the water goes</button>
+  <button id="v_above">2. Close-up: into the strait</button>
+  <div class="title" style="margin-top:8px">Which water</div>
+  <button id="d_all" class="on">All depths</button>
+  <button id="d_surface">Near the surface</button>
+  <button id="d_bottom">Near the seabed</button>
+  <div class="title" style="margin-top:8px">Colour</div>
+  <button id="c_depth" class="on">By depth</button>
+  <button id="c_temp">By water temperature</button>
+  <div class="legend" id="legendDepth"><div class="bar"></div><div class="ends"><span>surface</span><span>seabed</span></div></div>
+  <div class="legend" id="legendTemp" style="display:none"><div class="bar tempbar"></div><div class="ends"><span>-2 °C</span><span>2</span><span>6</span><span>10 °C</span></div></div>
+  <div class="title" style="margin-top:8px">Year</div>
+  <div class="row" id="yearButtons"></div>
+  <div class="title" style="margin-top:4px; line-height:1.4; max-width: 230px; font-size: 11px">1995 to 2015: HYCOM reanalysis. 2019, 2020 and 2023 (dashed): HYCOM analysis, a different model run, so part of any change after 2015 may come from the switch.</div>
+  <div class="title" style="margin-top:8px">Month</div>
+  <div class="row" id="monthButtons"></div>
+  <div id="iceControls" style="display:none">
+    <div class="title" style="margin-top:8px">Sea ice (satellite, monthly mean)</div>
+    <div class="row"><button id="ice_on">Show</button><button id="ice_off">Hide</button></div>
+  </div>
+  <div class="title" style="margin-top:8px; line-height:1.45; max-width: 230px">Move freely: drag to look around, scroll to fly towards where you look, arrows or WASD to move, Page Up/Down (or E/Q) to rise and sink, Shift + arrows to turn.</div>
+</div>
+
+<div id="corner">
+<div id="depth" class="panel"><div id="camText"></div><button id="copyView" style="margin-top:6px">Copy this view</button><input id="viewLine" readonly style="display:none; width: 330px; margin-top: 6px; font-size: 11px; background: #0b2a3a; color: #e6edf3; border: 1px solid #2a6a8c; border-radius: 4px; padding: 4px;"></div>
+<div id="inset" class="panel" style="display:none">
+  <div class="ititle">Where you are looking</div>
+  <svg id="insetSvg"></svg>
+  <div class="inote">White box: area of the 3D map. Red dot and wedge: camera and the direction it faces.</div>
+</div>
+</div>
+
+<script>
+// ===================== SETTINGS =====================
+const DATA_DIR = "data/";  // <- folder with the files from 01webterrain and 05particles
+const EARTH_R = 6378137;
+const STRAIT_CENTRE_KM = [0, -138];  // <- local km (east, north) of the strait centre, near the Diomedes
+const VIEWPOINTS = {};  // <- VISUAL: camera start points below: offset from the strait centre in km, height in baked metres (seabed about -2000), bearing, pitch (positive looks down)
+VIEWPOINTS.above = { offsetKm: [2.7, -31.8], heightM: 10000, bearing: 4, pitch: 19 };  // <- VISUAL: "Close-up: into the strait" (renamed 27 Nov 2026), 10 km above the water, 32 km south of the Diomedes, looking north into the strait (chosen with Likren 25 Nov 2026)
+VIEWPOINTS.over = { offsetKm: [30, -170], heightM: 260000, bearing: 0, pitch: 50 };  // <- VISUAL: high, looking north across the Chukchi Sea
+const SHOW_CAMERA_READOUT = false;  // <- true shows the camera height readout and the "Copy this view" button (a setup tool for choosing viewpoints)
+const SHOW_CASE_STUDY_LINK = true;  // <- true shows the case study link at the end of the left panel (turn on once case-study.html exists)
+const MOVE_STEP = 0.08;  // <- VISUAL: one arrow/WASD press moves this share of the camera height sideways or forwards (so it feels the same high and low)
+const RISE_STEP = 0.15;  // <- VISUAL: one Page Up/Down (or E/Q) press changes the height by this share
+const SCROLL_STEP = 0.10;  // <- VISUAL: one scroll step flies this share of the height towards where you look
+const MIN_STEP_M = 150;  // <- smallest step in metres (near or below the water surface)
+const HEIGHT_LIMITS_M = [-1800, 1500000];  // <- camera height range in baked metres (seabed is about -2000 at most)
+const MOVE_MARGIN_M = 400000;  // <- how far beyond the map edge the camera may wander (metres)
+const TURN_STEP_DEG = 5;  // <- Shift + arrows: turn left/right or look up/down by this many degrees
+const TRANSITION_MS = 1500;  // <- VISUAL: time to fly to a viewpoint after a button press
+const FOV = 60;  // <- VISUAL: camera field of view in degrees
+const SURFACE_COLOUR = [70, 150, 190, 90];  // <- VISUAL: sea surface seen from above
+const SURFACE_FROM_BELOW = [190, 235, 245, 170];  // <- VISUAL: sea surface seen from below (bright, lit by the sky)
+const UNDER_BACKGROUND = [10, 52, 66];  // <- VISUAL: water colour far away, when the camera is under water (also the haze colour)
+const ABOVE_BACKGROUND = [6, 22, 32];  // <- VISUAL: background when the camera is above the water
+const HAZE_START_M = 3000;  // <- VISUAL: under water, haze starts this far from the camera (real metres across the map)
+const HAZE_END_M = 60000;  // <- VISUAL: under water, things this far away are fully hazed
+const HAZE_ABOVE_START_M = 150000;  // <- VISUAL: above water, light haze starts here
+const HAZE_ABOVE_END_M = 900000;  // <- VISUAL: above water, light haze ends here
+const HAZE_ABOVE_MAX = 0.5;  // <- VISUAL: above water, strongest haze (0 to 1)
+const DEPTH_BANDS = { all: [0, 1], surface: [0, 0.34], bottom: [0.66, 1] };  // <- which particles each depth button shows (fraction of the water depth, 0 = surface, 1 = seabed)
+const ANALYSIS_FROM_YEAR = 2016;  // <- years from this on come from the HYCOM analysis (GLBy0.08 expt_93.0), earlier years from the reanalysis (GLBv0.08 expt_53.X): a different model run, so a jump between them may partly come from the switch
+const TRACK_YEARS = [1995, 2000, 2005, 2010, 2015, 2019, 2020, 2023];  // <- years with track files (docs/data/tracks_YYYYMM.bin from 05particles); add each new year here
+const START_YEAR = 2000;  // <- year shown first
+const TRACK_MONTHS = [2, 5, 8, 11];  // <- months with track files
+const START_MONTH = 8;  // <- month shown first
+const HOURS_PER_SECOND = 8;  // <- VISUAL: model hours played per real second (8 = one day in 3 seconds)
+const TRAIL_HOURS = 36;  // <- VISUAL: trail length in model hours when the camera is low
+const TRAIL_HOURS_HIGH = 96;  // <- VISUAL: trail length in model hours when the camera is high (overview)
+const TRAIL_LOW_M = 30000;  // <- VISUAL: camera height (map metres) at or below which TRAIL_HOURS is used
+const TRAIL_HIGH_M = 250000;  // <- VISUAL: camera height at or above which TRAIL_HOURS_HIGH is used
+const START_VIEW = "over";  // <- viewpoint shown first
+const START_COLOUR = "temp";  // <- colour shown first: "temp" (water temperature) or "depth"
+const TEMP_STOPS = [[-2, [90, 110, 255]], [2, [120, 230, 255]], [6, [255, 220, 120]], [10, [255, 100, 70]]];  // <- VISUAL: temperature colours (°C, colour)
+const PARTICLE_WIDTH_PX = 3;  // <- VISUAL: trail width in pixels
+const PARTICLE_COLOURS = [[150, 245, 255], [255, 220, 140]];  // <- VISUAL: near-surface colour, near-bottom colour
+const WATER_TINT = [20, 80, 105];  // <- VISUAL: colour mixed into the seabed so it looks under water
+const WATER_TINT_MIN = 0.35;  // <- VISUAL: tint at 0 m depth (0 to 1)
+const WATER_TINT_MAX = 0.7;  // <- VISUAL: tint at the deepest seabed (0 to 1)
+const MOORING_ANNUAL = [[1991, 0.95, 0.14], [1998, 0.98, 0.13], [1999, 0.90, 0.10], [2000, 0.81, 0.09], [2001, 0.68, 0.08], [2002, 0.90, 0.11], [2003, 0.97, 0.11], [2004, 1.06, 0.13], [2005, 0.79, 0.16], [2006, 0.91, 0.12], [2007, 1.12, 0.11], [2008, 0.91, 0.10], [2009, 0.95, 0.12], [2010, 1.03, 0.11], [2011, 1.08, 0.11], [2012, 0.77, 0.12], [2013, 1.06, 0.08], [2014, 1.18, 0.14], [2015, 1.09, 0.10], [2016, 1.03, 0.12], [2017, 1.14, 0.14], [2018, 1.06, 0.12], [2019, 1.26, 0.11], [2020, 1.13, 0.13], [2021, 1.00, 0.09], [2022, 1.05, 0.11], [2023, 0.97, 0.09], [2024, 0.98, 0.09]];  // <- year, transport (Sv), error (Sv), copied from data/uw_annual.csv (03moorings)
+const CHART_YEARS = [1978, 2027];  // <- VISUAL: x range of both charts (the same, so they line up)
+const CHART_SV = [0.5, 1.5];  // <- VISUAL: chart y range in Sv
+const CHART_LINE = "#7fd3e6";  // <- VISUAL: measured values
+const CHART_TREND = "#f0b35a";  // <- VISUAL: trend line
+const CHART_YEAR_MARK = "#ff8a6a";  // <- VISUAL: line marking the year shown in the animation
+const MODEL_VS_MEASURED = [[1995, 2, 0.86, 0.54, 18.8, -1.72, 0.82, 19.2, -1.78, "clim"], [1995, 5, 1.33, 0.32, 23.7, -1.24, 1.26, 29.6, -1.3, "clim"], [1995, 8, 1.0, 0.49, 17.8, 4.01, 1.11, 26.2, 2.49, "clim"], [1995, 11, 0.99, 0.73, 19.1, 1.56, 0.75, 17.7, 1.0, "clim"], [2000, 2, 0.95, 0.53, 21.7, -1.74, 0.75, 17.7, -1.83, "same"], [2000, 5, 1.16, 0.35, 23.1, -0.94, 0.92, 21.6, -1.51, "same"], [2000, 8, 1.37, 0.5, 23.8, 4.32, 1.23, 28.9, 0.97, "same"], [2000, 11, 0.86, 1.46, 15.8, 2.77, 0.77, 18.1, 0.82, "same"], [2005, 2, 0.61, 0.48, 14.2, -1.72, 0.49, 11.5, -1.8, "same"], [2005, 5, 1.18, 0.78, 21.1, -1.36, 0.84, 19.9, -1.5, "same"], [2005, 8, 1.68, 0.96, 26.5, 6.01, 1.22, 28.8, 2.95, "same"], [2005, 11, -0.32, 1.78, -6.8, 2.19, -0.23, -5.4, 0.64, "same"], [2010, 2, 0.95, 0.5, 21.3, -1.73, 0.64, 15.0, -1.81, "same"], [2010, 5, 1.26, 0.35, 25.4, -1.19, 1.41, 33.3, -1.49, "same"], [2010, 8, 1.42, 0.52, 24.9, 6.14, 1.41, 33.1, 2.64, "same"], [2010, 11, 0.57, 1.42, 8.4, 2.23, 0.68, 15.9, 0.87, "same"], [2015, 2, 1.1, 0.74, 21.9, -1.71, 1.08, 25.5, -1.76, "same"], [2015, 5, 1.61, 0.41, 28.2, -0.58, 1.93, 45.5, -0.9, "same"], [2015, 8, 1.35, 0.69, 22.8, 5.03, 1.36, 32.1, 4.06, "same"], [2015, 11, 0.07, 1.33, 0.5, 1.89, 0.28, 6.6, 1.0, "same"], [2019, 2, 1.9, 1.0, 32.6, -1.73, 2.17, 51.1, -1.77, "same"], [2019, 5, 1.39, 0.6, 24.1, -0.72, 1.28, 30.1, -1.03, "same"], [2019, 8, 1.44, 0.39, 24.4, 6.32, 1.53, 36.0, 2.93, "same"], [2019, 11, 0.44, 2.06, 7.4, 1.99, 0.71, 16.7, 1.82, "same"], [2020, 2, 0.33, 0.84, 6.1, -1.75, 0.51, 12.0, -1.8, "same"], [2020, 5, 1.49, 0.65, 24.9, -0.98, 1.45, 34.2, -1.47, "same"], [2020, 8, 1.29, 0.51, 22.4, 5.07, 1.29, 30.4, 2.86, "same"], [2020, 11, 0.87, 1.65, 13.9, 2.15, 0.9, 21.1, 1.93, "same"], [2023, 2, 0.96, 0.76, 19.5, -1.74, 0.97, 22.9, -1.81, "same"], [2023, 5, 0.8, 0.8, 15.3, -1.48, 0.8, 18.9, -1.6, "same"], [2023, 8, 0.97, 0.74, 17.2, 6.52, 1.07, 25.2, 2.44, "same"], [2023, 11, 1.06, 1.69, 18.9, 1.66, 1.12, 26.3, 1.87, "same"]];  // <- year, month, model flow (Sv), model snapshot spread (sd, Sv), model current near the seabed at A3 (cm/s, + = north), model temperature near the seabed at A3 (°C), measured flow (Sv), measured current (cm/s), measured temperature (°C), "same" = measured in the same month or "clim" = average of all measured years for that month; copied from data/model_vs_moorings.csv (04hycommonthly)
+const MVM_SV = [-0.5, 2.5];  // <- VISUAL: y range of the model vs measured chart (Sv)
+const MVM_YEARS = [1992, 2026];  // <- VISUAL: x range of the model vs measured chart
+const MODEL_COLOUR = "#c9a8ff";  // <- VISUAL: model values (measured values use CHART_LINE)
+const TEMP_OFF_C = 1.0;  // <- model temperature more than this many °C from the measured one is shown in orange
+const INSET_FILE = "data/inset_map.json";  // <- inset map outline (made by make_inset.py from Natural Earth via world-atlas); page works without it
+const INSET_WEDGE_PX = 20;  // <- VISUAL: length of the viewing-direction wedge on the inset map
+const INSET_WEDGE_DEG = 30;  // <- VISUAL: half-width of the wedge (degrees)
+const INSET_LAND = "#4f6f62";  // <- VISUAL: inset land colour
+const INSET_SEA = "#0b3346";  // <- VISUAL: inset sea colour
+const ICE_DIR = "data/ice/";  // <- folder with the ice pictures and ice_index.json from 06seaice (page works without it)
+const ICE_START_ON = true;  // <- sea ice shown at the start
+const ICE_OPACITY = 1;  // <- VISUAL: how solid the ice sheet looks (0 to 1); 1 = solid ice, the water under it is hidden (use Hide to see it)
+const ICE_Z = 30;  // <- VISUAL: ice sheet height above the sea surface in baked metres (just enough to sit on top)
+const ICE_CHART_LINE = "#e8f1f6";  // <- VISUAL: ice chart line
+// ====================================================
+
+let meta = null;
+let heightGrid = null;
+let deckgl = null;
+let staticLayers = [];
+let labelLayer = null;
+let surfaceData = null;
+let trips = [];
+let viewState = null;
+let band = "all";
+let shownTrips = [];
+let underwater = false;
+let fogUnder = null;
+let fogAbove = null;
+let texture = null;
+let trackCache = {};
+let currentMonth = null;
+let currentYear = null;
+let monthInfo = null;
+let colourMode = "depth";
+let iceIndex = null;
+let iceOn = ICE_START_ON;
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+class HazeExtension extends deck.LayerExtension {
+  getShaders(extension) {
+    const o = extension.opts;
+    const c = o.colour.map(v => (v / 255).toFixed(4)).join(", ");
+    return {
+      inject: {
+        "vs:#decl": "out vec3 vHazeVec;",
+        "vs:DECKGL_FILTER_GL_POSITION": "vHazeVec = (project.cameraPosition - geometry.position.xyz) / project.commonUnitsPerMeter.x;",
+        "fs:#decl": "in vec3 vHazeVec;",
+        "fs:DECKGL_FILTER_COLOR": `float hazeF = smoothstep(${o.start.toFixed(1)}, ${o.end.toFixed(1)}, length(vHazeVec)) * ${o.max.toFixed(3)}; color.rgb = mix(color.rgb, vec3(${c}), hazeF);`
+      }
+    };
+  }
+}
+HazeExtension.extensionName = "HazeExtension";
+
+function lonFromX(x) { return x / EARTH_R * 180 / Math.PI; }
+function latFromY(y) { return (2 * Math.atan(Math.exp(y / EARTH_R)) - Math.PI / 2) * 180 / Math.PI; }
+
+async function loadHeights(url) {
+  const img = new Image();
+  img.src = url;
+  await img.decode();
+  const c = document.createElement("canvas");
+  c.width = img.width;
+  c.height = img.height;
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+  const d = ctx.getImageData(0, 0, img.width, img.height).data;
+  const h = new Float32Array(img.width * img.height);
+  for (let i = 0; i < h.length; i++) h[i] = (d[4 * i] * 65536 + d[4 * i + 1] * 256 + d[4 * i + 2]) * 0.1 - 100000;
+  return { w: img.width, h: img.height, data: h };
+}
+
+function bakedHeightAt(xm, ym) {
+  const [l, b, r, t] = meta.local_bounds_m;
+  const col = Math.round((xm - l) / (r - l) * (heightGrid.w - 1));
+  const row = Math.round((t - ym) / (t - b) * (heightGrid.h - 1));
+  if (col < 0 || row < 0 || col >= heightGrid.w || row >= heightGrid.h) return 0;
+  return heightGrid.data[row * heightGrid.w + col];
+}
+
+async function tintedTexture(url) {
+  const img = new Image();
+  img.src = url;
+  await img.decode();
+  const c = document.createElement("canvas");
+  c.width = img.width;
+  c.height = img.height;
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+  const im = ctx.getImageData(0, 0, c.width, c.height);
+  const d = im.data;
+  for (let row = 0; row < c.height; row++) {
+    const hr = Math.min(heightGrid.h - 1, Math.round(row / (c.height - 1) * (heightGrid.h - 1)));
+    for (let col = 0; col < c.width; col++) {
+      const hc = Math.min(heightGrid.w - 1, Math.round(col / (c.width - 1) * (heightGrid.w - 1)));
+      const z = heightGrid.data[hr * heightGrid.w + hc];
+      if (z >= 0) continue;
+      const a = WATER_TINT_MIN + (WATER_TINT_MAX - WATER_TINT_MIN) * Math.min(1, -z / 2400);
+      const i = 4 * (row * c.width + col);
+      for (let j = 0; j < 3; j++) d[i + j] = Math.round(d[i + j] * (1 - a) + WATER_TINT[j] * a);
+    }
+  }
+  ctx.putImageData(im, 0, 0);
+  return c;
+}
+
+function tempColour(t) {
+  const stops = TEMP_STOPS;
+  if (t <= stops[0][0]) return stops[0][1];
+  for (let i = 1; i < stops.length; i++) {
+    if (t <= stops[i][0]) {
+      const f = (t - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]);
+      return stops[i - 1][1].map((c, j) => Math.round(c + (stops[i][1][j] - c) * f));
+    }
+  }
+  return stops[stops.length - 1][1];
+}
+
+async function loadTracks(year, month) {
+  const key = year + String(month).padStart(2, "0");
+  if (trackCache[key]) return trackCache[key];
+  const info = await (await fetch(DATA_DIR + "tracks_" + key + ".json")).json();
+  const buf = await (await fetch(DATA_DIR + "tracks_" + key + ".bin")).arrayBuffer();
+  const n = info.n;
+  const starts = new Uint16Array(buf, 0, n);
+  const counts = new Uint16Array(buf, 2 * n, n);
+  const temps = new Int16Array(buf, 4 * n, n);
+  const fracs = new Uint16Array(buf, 6 * n, n);
+  const xyz = new Int16Array(buf, 8 * n, info.total_points * 3);
+  const out = [];
+  let p = 0;
+  for (let i = 0; i < n; i++) {
+    const path = new Array(counts[i]);
+    const times = new Array(counts[i]);
+    for (let k = 0; k < counts[i]; k++) {
+      path[k] = [lonFromX(xyz[3 * p] * info.xy_unit_m), latFromY(xyz[3 * p + 1] * info.xy_unit_m), xyz[3 * p + 2]];
+      times[k] = (starts[i] + k) * info.record_hours;
+      p++;
+    }
+    out.push({ path, times, frac: fracs[i] / 1000, temp: temps[i] / 100 });
+  }
+  trackCache[key] = { info, trips: out };
+  return trackCache[key];
+}
+
+async function setMonth(month) {
+  const t = await loadTracks(currentYear, month);
+  currentMonth = month;
+  monthInfo = t.info;
+  trips = t.trips;
+  setBand(band);
+  for (const m of TRACK_MONTHS) document.getElementById("m_" + m).classList.toggle("on", m === month);
+  drawIceChart();
+  drawModelVsMeasured();
+}
+
+function drawModelVsMeasured() {
+  const block = document.getElementById("mvmBlock");
+  const rows = MODEL_VS_MEASURED.filter(d => d[1] === currentMonth);
+  const row = rows.find(d => d[0] === currentYear);
+  if (!rows.length) { block.style.display = "none"; return; }
+  block.style.display = "block";
+  const mon = MONTH_NAMES[currentMonth - 1];
+  document.getElementById("mvmTitle").textContent = "Model and measurements, " + mon + " " + currentYear;
+  const table = document.getElementById("mvmTable");
+  const note = document.getElementById("mvmNote");
+  if (!row) {
+    table.innerHTML = "";
+    note.textContent = "No model comparison for this month yet.";
+  } else {
+    const fmt = (v, dp) => (v > 0 ? "" : v < 0 ? "−" : "") + Math.abs(v).toFixed(dp);
+    const tempOff = Math.abs(row[5] - row[8]) > TEMP_OFF_C;
+    const measHead = row[9] === "clim" ? "Measured*" : "Measured";
+    table.innerHTML =
+      `<tr><th></th><th>Model</th><th>${measHead}</th></tr>` +
+      `<tr><td>Flow through the strait (Sv)</td><td class="model">${fmt(row[2], 2)}</td><td class="meas">${fmt(row[6], 2)}</td></tr>` +
+      `<tr><td>Current near the seabed (cm/s)</td><td class="model">${fmt(row[4], 1)}</td><td class="meas">${fmt(row[7], 1)}</td></tr>` +
+      `<tr><td>Water near the seabed (°C)</td><td class="${tempOff ? "off" : "model"}">${fmt(row[5], 1)}</td><td class="meas">${fmt(row[8], 1)}</td></tr>`;
+    const lines = [];
+    if (row[9] === "clim") lines.push("* No measurements in " + currentYear + ": measured column is the " + mon + " average of all measured years (1990 to 2025).");
+    if (row[2] < 0 || row[6] < 0) lines.push("Negative = net flow to the south, back into the Pacific" + (row[2] < 0 && row[6] < 0 ? "; model and moorings both show it this month." : "."));
+    if (tempOff) lines.push("Orange: the model's bottom water is " + (row[5] - row[8]).toFixed(1) + " °C too warm (it mixes warm surface water down too much), so seabed colours on the map run warm.");
+    if (row[3] > 1) lines.push("The model flow swings strongly with the wind this month (± " + row[3].toFixed(2) + " Sv) and runs south in some of the 2-day snapshots.");
+    note.textContent = lines.join(" ");
+  }
+  // chart: this month in every model year
+  const svg = document.getElementById("mvmSvg");
+  const W = Number(svg.getAttribute("width"));
+  const H = Number(svg.getAttribute("height"));
+  const L = 30, R = 6, T = 14, B = 18;
+  const sx = y => L + (y - MVM_YEARS[0]) / (MVM_YEARS[1] - MVM_YEARS[0]) * (W - L - R);
+  const clampV = v => Math.max(MVM_SV[0], Math.min(MVM_SV[1], v));
+  const sy = v => T + (MVM_SV[1] - clampV(v)) / (MVM_SV[1] - MVM_SV[0]) * (H - T - B);
+  const parts = [];
+  parts.push(`<text x="${L}" y="9" font-size="10" fill="#e6edf3">Flow in ${mon} (Sv)</text>`);
+  for (const v of [0, 1.0, 2.0]) {
+    if (v < MVM_SV[0] || v > MVM_SV[1]) continue;
+    parts.push(`<line x1="${L}" x2="${W - R}" y1="${sy(v)}" y2="${sy(v)}" stroke="rgba(255,255,255,${v === 0 ? 0.35 : 0.12})"/>`);
+    parts.push(`<text x="${L - 4}" y="${sy(v) + 3}" font-size="10" fill="#9fb7c6" text-anchor="end">${v.toFixed(1)}</text>`);
+  }
+  // year labels: the shown year first, then the others in full or as 'YY where they fit, skipped if they would overlap
+  const placed = [];
+  const fits = (x, w) => placed.every(p => Math.abs(p.x - x) > (p.w + w) / 2 + 2);
+  const order = rows.map(d => d[0]).sort((a, b) => (b === currentYear) - (a === currentYear) || a - b);
+  for (const y of order) {
+    const x = sx(y);
+    let text = String(y), w = 23;
+    if (!fits(x, w)) { text = "\u2019" + String(y).slice(2); w = 13; }
+    if (!fits(x, w) && y !== currentYear) continue;
+    placed.push({ x, w });
+    parts.push(`<text x="${x}" y="${H - 4}" font-size="10" fill="${y === currentYear ? CHART_YEAR_MARK : "#9fb7c6"}" text-anchor="middle">${text}</text>`);
+  }
+  if (row) parts.push(`<rect x="${sx(currentYear) - 11}" y="${T - 2}" width="22" height="${H - T - B + 4}" fill="rgba(255,138,106,0.14)" rx="3"/>`);
+  const dx = 4;
+  for (const d of rows) {
+    const x = sx(d[0]);
+    parts.push(`<line x1="${x - dx}" x2="${x - dx}" y1="${sy(d[2] - d[3])}" y2="${sy(d[2] + d[3])}" stroke="${MODEL_COLOUR}" stroke-opacity="0.45" stroke-width="2"/>`);
+    parts.push(`<circle cx="${x - dx}" cy="${sy(d[2])}" r="3.2" fill="${MODEL_COLOUR}"><title>Model ${mon} ${d[0]}: ${d[2].toFixed(2)} Sv (snapshots ± ${d[3].toFixed(2)})</title></circle>`);
+    const hollow = d[9] === "clim";
+    parts.push(`<circle cx="${x + dx}" cy="${sy(d[6])}" r="3.2" fill="${hollow ? "none" : CHART_LINE}" stroke="${CHART_LINE}" stroke-width="1.3"><title>Measured ${mon} ${d[0]}: ${d[6].toFixed(2)} Sv${hollow ? " (average of all years, no measurements in " + d[0] + ")" : ""}</title></circle>`);
+  }
+  // era divider between reanalysis and analysis years
+  const lastRe = Math.max(...rows.filter(d => d[0] < ANALYSIS_FROM_YEAR).map(d => d[0]));
+  const firstAn = Math.min(...rows.filter(d => d[0] >= ANALYSIS_FROM_YEAR).map(d => d[0]));
+  if (isFinite(lastRe) && isFinite(firstAn)) {
+    const xd = (sx(lastRe) + sx(firstAn)) / 2;
+    parts.push(`<line x1="${xd}" x2="${xd}" y1="${T}" y2="${H - B}" stroke="rgba(255,255,255,0.35)" stroke-dasharray="3 3"/>`);
+    parts.push(`<text x="${xd - 3}" y="${H - B - 3}" font-size="8" fill="#9fb7c6" text-anchor="end">reanalysis</text>`);
+    parts.push(`<text x="${xd + 3}" y="${H - B - 3}" font-size="8" fill="#9fb7c6">analysis</text>`);
+  }
+  // legend
+  parts.push(`<circle cx="${W - R - 104}" cy="5" r="3" fill="${MODEL_COLOUR}"/><text x="${W - R - 98}" y="9" font-size="9.5" fill="${MODEL_COLOUR}">model</text>`);
+  parts.push(`<circle cx="${W - R - 58}" cy="5" r="3" fill="${CHART_LINE}"/><text x="${W - R - 52}" y="9" font-size="9.5" fill="${CHART_LINE}">measured</text>`);
+  svg.innerHTML = parts.join("");
+}
+
+function setIce(on) {
+  iceOn = on;
+  document.getElementById("ice_on").classList.toggle("on", on);
+  document.getElementById("ice_off").classList.toggle("on", !on);
+}
+
+async function loadIceIndex() {
+  try {
+    const r = await fetch(ICE_DIR + "ice_index.json");
+    if (!r.ok) return null;
+    return await r.json();
+  } catch (e) {
+    return null;
+  }
+}
+
+function iceLayer(ext) {
+  if (!iceIndex || !iceOn || !currentYear || !currentMonth) return null;
+  const key = currentYear + String(currentMonth).padStart(2, "0");
+  if (!iceIndex.images.includes(key)) return null;
+  const [w, s, e, n] = iceIndex.bounds;
+  return new deck.BitmapLayer({ id: "ice", image: ICE_DIR + "ice_" + key + ".png", bounds: [[w, s, ICE_Z], [w, n, ICE_Z], [e, n, ICE_Z], [e, s, ICE_Z]], opacity: ICE_OPACITY, parameters: { depthWriteEnabled: false, cullMode: "none" } });
+}
+
+function drawIceChart() {
+  if (!iceIndex) return;
+  const svg = document.getElementById("iceSvg");
+  const W = Number(svg.getAttribute("width"));
+  const H = Number(svg.getAttribute("height"));
+  const L = 30;
+  const R = 6;
+  const T = 8;
+  const B = 18;
+  const cols = iceIndex.monthly.columns;
+  const iy = cols.indexOf("year");
+  const im = cols.indexOf("month");
+  const ia = cols.indexOf("ice_area_km2");
+  const rows = iceIndex.monthly.rows.filter(r => r[im] === currentMonth).map(r => [r[iy], r[ia] / 1000]);
+  const water = iceIndex.water_km2 / 1000;
+  const top = Math.max(100, Math.ceil(water / 100) * 100);
+  const sx = y => L + (y - CHART_YEARS[0]) / (CHART_YEARS[1] - CHART_YEARS[0]) * (W - L - R);
+  const sy = v => T + (top - v) / top * (H - T - B);
+  const first = rows.length ? rows[0][0] : "";
+  const last = rows.length ? rows[rows.length - 1][0] : "";
+  document.getElementById("iceTitle").textContent = "Observed sea ice in the map, " + MONTH_NAMES[currentMonth - 1] + " " + first + " to " + last + " (1000 km²)";
+  document.getElementById("iceWater").textContent = Math.round(water);
+  const parts = [];
+  for (const v of [0, top / 2, top]) {
+    parts.push(`<line x1="${L}" x2="${W - R}" y1="${sy(v)}" y2="${sy(v)}" stroke="rgba(255,255,255,0.12)"/>`);
+    parts.push(`<text x="${L - 4}" y="${sy(v) + 3}" font-size="10" fill="#9fb7c6" text-anchor="end">${Math.round(v)}</text>`);
+  }
+  for (const y of [1980, 1990, 2000, 2010, 2020]) parts.push(`<text x="${sx(y)}" y="${H - 4}" font-size="10" fill="#9fb7c6" text-anchor="middle">${y}</text>`);
+  parts.push(`<line x1="${sx(currentYear)}" x2="${sx(currentYear)}" y1="${T}" y2="${H - B}" stroke="${CHART_YEAR_MARK}" stroke-width="2"/>`);
+  if (rows.length > 5) {
+    const n = rows.length;
+    const mx = rows.reduce((a, d) => a + d[0], 0) / n;
+    const my = rows.reduce((a, d) => a + d[1], 0) / n;
+    const slope = rows.reduce((a, d) => a + (d[0] - mx) * (d[1] - my), 0) / rows.reduce((a, d) => a + (d[0] - mx) * (d[0] - mx), 0);
+    const t0 = my + slope * (first - mx);
+    const t1 = my + slope * (last - mx);
+    const perDecade = (slope >= 0 ? "+" : "") + Math.round(slope * 10) + " thousand km² per decade, ";
+    if (t1 >= 0) {
+      parts.push(`<line x1="${sx(first)}" x2="${sx(last)}" y1="${sy(t0)}" y2="${sy(t1)}" stroke="${CHART_TREND}" stroke-width="1.5" stroke-dasharray="4 3"/>`);
+      const pct = t0 > 0 ? " (" + (t1 >= t0 ? "+" : "") + Math.round((t1 / t0 - 1) * 100) + "%)" : "";
+      document.getElementById("iceTrendText").textContent = perDecade + Math.round(t0) + " to " + Math.round(t1) + pct;
+    } else {
+      // a straight line cannot go below no ice: stop it where it reaches zero
+      const zeroYear = mx - my / slope;
+      parts.push(`<line x1="${sx(first)}" x2="${sx(zeroYear)}" y1="${sy(t0)}" y2="${sy(0)}" stroke="${CHART_TREND}" stroke-width="1.5" stroke-dasharray="4 3"/>`);
+      document.getElementById("iceTrendText").textContent = perDecade + Math.round(t0) + " at the start; the straight line reaches zero around " + Math.round(zeroYear);
+    }
+  }
+  const runs = [];
+  let run = [];
+  for (const d of rows) {
+    if (run.length && d[0] !== run[run.length - 1][0] + 1) {
+      runs.push(run);
+      run = [];
+    }
+    run.push(d);
+  }
+  if (run.length) runs.push(run);
+  for (const r of runs) parts.push(`<polyline points="${r.map(d => sx(d[0]) + "," + sy(d[1])).join(" ")}" fill="none" stroke="${ICE_CHART_LINE}" stroke-width="1.3"/>`);
+  for (const d of rows) parts.push(`<circle cx="${sx(d[0])}" cy="${sy(d[1])}" r="${d[0] === currentYear ? 3.5 : 1.8}" fill="${d[0] === currentYear ? CHART_YEAR_MARK : ICE_CHART_LINE}"><title>${MONTH_NAMES[currentMonth - 1]} ${d[0]}: ${Math.round(d[1])} thousand km²</title></circle>`);
+  const shown = rows.find(d => d[0] === currentYear);
+  parts.push(`<text x="${sx(currentYear) + (sx(currentYear) > W - 70 ? -3 : 3)}" y="${T + 9}" font-size="9" fill="${CHART_YEAR_MARK}" text-anchor="${sx(currentYear) > W - 70 ? "end" : "start"}">shown: ${currentYear}${shown ? ", " + Math.round(shown[1]) : ""}</text>`);
+  svg.innerHTML = parts.join("");
+}
+
+async function setYear(year) {
+  currentYear = year;
+  document.getElementById("yearText").textContent = year;
+  document.getElementById("modelKind").textContent = year >= ANALYSIS_FROM_YEAR ? "analysis; the years to 2015 use the reanalysis" : "reanalysis";
+  drawChart(year);
+  for (const y of TRACK_YEARS) document.getElementById("y_" + y).classList.toggle("on", y === year);
+  await setMonth(currentMonth || START_MONTH);
+}
+
+function setColourMode(mode) {
+  colourMode = mode;
+  document.getElementById("c_depth").classList.toggle("on", mode === "depth");
+  document.getElementById("c_temp").classList.toggle("on", mode === "temp");
+  document.getElementById("legendDepth").style.display = mode === "depth" ? "block" : "none";
+  document.getElementById("legendTemp").style.display = mode === "temp" ? "block" : "none";
+}
+
+function viewFor(key) {
+  const v = VIEWPOINTS[key];
+  const xm = (STRAIT_CENTRE_KM[0] + v.offsetKm[0]) * 1000;
+  const ym = (STRAIT_CENTRE_KM[1] + v.offsetKm[1]) * 1000;
+  return { longitude: lonFromX(xm), latitude: latFromY(ym), position: [0, 0, v.heightM], bearing: v.bearing, pitch: v.pitch, maxPitch: 89, minPitch: -89 };
+}
+
+// ---- free movement (deck.gl's own steps are 20 m, invisible at these heights) ----
+function stepFor(z) { return Math.max(MIN_STEP_M, Math.abs(z)); }
+
+function moveCamera(forwardM, rightM, upM, turnDeg, lookDeg) {
+  if (!viewState) return;
+  const vs = { ...viewState };
+  delete vs.transitionDuration;
+  delete vs.transitionInterpolator;
+  const pos = (vs.position || [0, 0, 0]).slice();
+  const b = vs.bearing * Math.PI / 180;
+  pos[0] += Math.sin(b) * forwardM + Math.cos(b) * rightM;
+  pos[1] += Math.cos(b) * forwardM - Math.sin(b) * rightM;
+  pos[2] = Math.min(HEIGHT_LIMITS_M[1], Math.max(HEIGHT_LIMITS_M[0], pos[2] + upM));
+  // keep the camera near the map
+  const ax = vs.longitude * Math.PI / 180 * EARTH_R;
+  const ay = Math.log(Math.tan(Math.PI / 4 + vs.latitude * Math.PI / 360)) * EARTH_R;
+  const [x0, y0, x1, y1] = meta.local_bounds_m;
+  pos[0] = Math.min(x1 + MOVE_MARGIN_M, Math.max(x0 - MOVE_MARGIN_M, ax + pos[0])) - ax;
+  pos[1] = Math.min(y1 + MOVE_MARGIN_M, Math.max(y0 - MOVE_MARGIN_M, ay + pos[1])) - ay;
+  vs.position = pos;
+  vs.bearing = vs.bearing + turnDeg;
+  vs.pitch = Math.min(89, Math.max(-89, vs.pitch + lookDeg));
+  viewState = vs;
+  deckgl.setProps({ viewState: vs });
+  showDepth(vs);
+  updateInset(vs);
+  for (const k of Object.keys(VIEWPOINTS)) document.getElementById("v_" + k).classList.remove("on");
+}
+
+function onKey(e) {
+  const tag = (e.target && e.target.tagName) || "";
+  if (tag === "INPUT" || tag === "TEXTAREA") return;
+  const z = viewState && viewState.position ? viewState.position[2] : 0;
+  const step = stepFor(z) * MOVE_STEP;
+  const rise = stepFor(z) * RISE_STEP;
+  const k = e.code;
+  if (e.shiftKey && k.startsWith("Arrow")) {
+    if (k === "ArrowLeft") moveCamera(0, 0, 0, -TURN_STEP_DEG, 0);
+    else if (k === "ArrowRight") moveCamera(0, 0, 0, TURN_STEP_DEG, 0);
+    else if (k === "ArrowUp") moveCamera(0, 0, 0, 0, -TURN_STEP_DEG);
+    else if (k === "ArrowDown") moveCamera(0, 0, 0, 0, TURN_STEP_DEG);
+  } else if (k === "ArrowUp" || k === "KeyW") moveCamera(step, 0, 0, 0, 0);
+  else if (k === "ArrowDown" || k === "KeyS") moveCamera(-step, 0, 0, 0, 0);
+  else if (k === "ArrowLeft" || k === "KeyA") moveCamera(0, -step, 0, 0, 0);
+  else if (k === "ArrowRight" || k === "KeyD") moveCamera(0, step, 0, 0, 0);
+  else if (k === "PageUp" || k === "KeyE") moveCamera(0, 0, rise, 0, 0);
+  else if (k === "PageDown" || k === "KeyQ") moveCamera(0, 0, -rise, 0, 0);
+  else return;
+  e.preventDefault();
+}
+
+function onWheel(e) {
+  e.preventDefault();
+  if (!viewState) return;
+  const z = viewState.position ? viewState.position[2] : 0;
+  const dist = stepFor(z) * SCROLL_STEP * (e.deltaY < 0 ? 1 : -1) * Math.min(3, Math.max(1, Math.abs(e.deltaY) / 100));
+  const p = viewState.pitch * Math.PI / 180;  // positive looks down
+  moveCamera(dist * Math.cos(p), 0, -dist * Math.sin(p), 0, 0);
+}
+
+function setView(key) {
+  viewState = { ...viewFor(key), transitionDuration: TRANSITION_MS, transitionInterpolator: new deck.LinearInterpolator(["longitude", "latitude", "position", "bearing", "pitch"]) };
+  deckgl.setProps({ viewState });
+  for (const k of Object.keys(VIEWPOINTS)) document.getElementById("v_" + k).classList.toggle("on", k === key);
+}
+
+function showDepth(vs) {
+  const z = vs.position ? vs.position[2] : 0;
+  const el = document.getElementById("camText");
+  const turn = Math.round(((vs.bearing % 360) + 360) % 360);
+  if (z < 0) el.textContent = "Camera about " + Math.round(-z / meta.seabed_exaggeration) + " m below the surface";
+  else el.textContent = "Camera height " + (z / 1000).toFixed(1) + " km, heading " + turn + "°, looking down " + Math.round(vs.pitch) + "°";
+}
+
+function viewLine() {
+  const vs = viewState;
+  const pos = vs.position || [0, 0, 0];
+  const xm = vs.longitude * Math.PI / 180 * EARTH_R + pos[0];
+  const ym = Math.log(Math.tan(Math.PI / 4 + vs.latitude * Math.PI / 360)) * EARTH_R + pos[1];
+  const ox = (xm / 1000 - STRAIT_CENTRE_KM[0]).toFixed(1);
+  const oy = (ym / 1000 - STRAIT_CENTRE_KM[1]).toFixed(1);
+  const turn = Math.round(((vs.bearing % 360) + 360) % 360);
+  return "{ offsetKm: [" + ox + ", " + oy + "], heightM: " + Math.round(pos[2]) + ", bearing: " + turn + ", pitch: " + Math.round(vs.pitch) + " }";
+}
+
+function copyView() {
+  const line = viewLine();
+  const box = document.getElementById("viewLine");
+  box.value = line;
+  box.style.display = "block";
+  box.select();
+  if (navigator.clipboard) navigator.clipboard.writeText(line).catch(() => {});
+}
+
+function setBand(key) {
+  band = key;
+  const [lo, hi] = DEPTH_BANDS[key];
+  shownTrips = trips.filter(d => d.frac >= lo && d.frac <= hi);
+  for (const k of Object.keys(DEPTH_BANDS)) document.getElementById("d_" + k).classList.toggle("on", k === key);
+}
+
+function frame() {
+  const t = monthInfo ? (performance.now() / 1000 * HOURS_PER_SECOND) % monthInfo.month_hours : 0;
+  if (monthInfo) document.getElementById("clock").textContent = MONTH_NAMES[currentMonth - 1] + " " + currentYear + ", day " + (Math.floor(t / 24) + 1);
+  const z = viewState && viewState.position ? viewState.position[2] : 0;
+  const nowUnder = z < 0;
+  if (nowUnder !== underwater) {
+    underwater = nowUnder;
+    deckgl.setProps({ parameters: { clearColor: (underwater ? UNDER_BACKGROUND : ABOVE_BACKGROUND).map(c => c / 255).concat(1) } });
+  }
+  const ext = underwater ? [fogUnder] : [fogAbove];
+  const terrain = new deck.TerrainLayer({ id: "terrain", elevationData: DATA_DIR + meta.height_png, texture, bounds: meta.bounds, elevationDecoder: meta.decoder, meshMaxError: 10, material: false, extensions: ext });
+  const surface = new deck.SolidPolygonLayer({ id: "surface", data: surfaceData, getPolygon: d => d.polygon, getFillColor: underwater ? SURFACE_FROM_BELOW : SURFACE_COLOUR, updateTriggers: { getFillColor: underwater }, extensions: ext, parameters: { depthWriteEnabled: false, cullMode: "none" } });
+  const tripsLayer = new deck.TripsLayer({
+    id: "tracks",
+    data: shownTrips,
+    extensions: ext,
+    getPath: d => d.path,
+    getTimestamps: d => d.times,
+    getColor: d => colourMode === "temp" ? tempColour(d.temp) : PARTICLE_COLOURS[0].map((c, j) => Math.round(c + (PARTICLE_COLOURS[1][j] - c) * d.frac)),
+    updateTriggers: { getColor: colourMode },
+    widthUnits: "pixels",
+    getWidth: PARTICLE_WIDTH_PX,
+    billboard: true,
+    capRounded: true,
+    jointRounded: true,
+    trailLength: TRAIL_HOURS + (TRAIL_HOURS_HIGH - TRAIL_HOURS) * Math.min(1, Math.max(0, (z - TRAIL_LOW_M) / (TRAIL_HIGH_M - TRAIL_LOW_M))),
+    currentTime: t,
+    parameters: { depthWriteEnabled: false }
+  });
+  deckgl.setProps({ layers: [terrain, surface, tripsLayer, iceLayer(ext), labelLayer] });
+  requestAnimationFrame(frame);
+}
+
+// ---- inset map ----
+let inset = null;
+const LOCAL_LAT0 = 67, LOCAL_LON0 = -169;  // local LAEA centre (bering_meta.json local_crs)
+const SPHERE_R = 6371007;  // spherical approximation, fine at inset scale
+
+function localToLonLat(x, y) {
+  const p0 = LOCAL_LAT0 * Math.PI / 180, l0 = LOCAL_LON0 * Math.PI / 180;
+  const rho = Math.hypot(x, y);
+  if (rho < 1e-6) return [LOCAL_LON0, LOCAL_LAT0];
+  const c = 2 * Math.asin(Math.min(1, rho / (2 * SPHERE_R)));
+  const lat = Math.asin(Math.cos(c) * Math.sin(p0) + y * Math.sin(c) * Math.cos(p0) / rho);
+  const lon = l0 + Math.atan2(x * Math.sin(c), rho * Math.cos(p0) * Math.cos(c) - y * Math.sin(p0) * Math.sin(c));
+  return [lon * 180 / Math.PI, lat * 180 / Math.PI];
+}
+
+function insetXY(lon, lat) {
+  const p0 = inset.centre[0] * Math.PI / 180, l0 = inset.centre[1] * Math.PI / 180;
+  const p = lat * Math.PI / 180, l = lon * Math.PI / 180;
+  const k = Math.sqrt(2 / (1 + Math.sin(p0) * Math.sin(p) + Math.cos(p0) * Math.cos(p) * Math.cos(l - l0)));
+  const x = 6371 * k * Math.cos(p) * Math.sin(l - l0);
+  const y = 6371 * k * (Math.cos(p0) * Math.sin(p) - Math.sin(p0) * Math.cos(p) * Math.cos(l - l0));
+  return [(x + inset.half_w_km) * inset.scale_px_per_km, (inset.top_km - y) * inset.scale_px_per_km];
+}
+
+function insetPath(lonlats) {
+  return lonlats.map((q, i) => (i ? "L" : "M") + insetXY(q[0], q[1]).map(v => v.toFixed(1)).join(",")).join("");
+}
+
+async function loadInset() {
+  try {
+    const r = await fetch(INSET_FILE);
+    if (!r.ok) return;
+    inset = await r.json();
+  } catch (e) {
+    return;
+  }
+  const svg = document.getElementById("insetSvg");
+  svg.setAttribute("width", inset.w);
+  svg.setAttribute("height", inset.h);
+  svg.setAttribute("viewBox", `0 0 ${inset.w} ${inset.h}`);
+  const parts = [`<rect width="${inset.w}" height="${inset.h}" fill="${INSET_SEA}"/>`];
+  // graticule: latitude circles and meridians
+  for (const lat of [40, 50, 60, 70, 80]) {
+    const pts = [];
+    for (let lon = 100; lon <= 260; lon += 2) pts.push([lon, lat]);
+    parts.push(`<path d="${insetPath(pts)}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="0.6"/>`);
+  }
+  for (let lon = 120; lon <= 240; lon += 30) {
+    const pts = [];
+    for (let lat = 30; lat <= 90; lat += 2) pts.push([lon, lat]);
+    parts.push(`<path d="${insetPath(pts)}" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="0.6"/>`);
+  }
+  parts.push(`<path d="${inset.land_path}" fill="${INSET_LAND}"/>`);
+  const ac = [];
+  for (let lon = 100; lon <= 260; lon += 2) ac.push([lon, 66.56]);
+  parts.push(`<path d="${insetPath(ac)}" fill="none" stroke="rgba(160,210,230,0.55)" stroke-width="0.8" stroke-dasharray="3 2"/>`);
+  // map window outline
+  const [x0, y0, x1, y1] = meta.local_bounds_m;
+  const edge = [];
+  const N = 12;
+  for (let i = 0; i <= N; i++) edge.push([x0 + (x1 - x0) * i / N, y0]);
+  for (let i = 1; i <= N; i++) edge.push([x1, y0 + (y1 - y0) * i / N]);
+  for (let i = 1; i <= N; i++) edge.push([x1 - (x1 - x0) * i / N, y1]);
+  for (let i = 1; i <= N; i++) edge.push([x0, y1 - (y1 - y0) * i / N]);
+  parts.push(`<path d="${insetPath(edge.map(q => localToLonLat(q[0], q[1])))}Z" fill="rgba(255,255,255,0.08)" stroke="#ffffff" stroke-width="1.2"/>`);
+  // labels
+  const lab = (lon, lat, text, size, colour, anchor) => {
+    const [x, y] = insetXY(lon, lat);
+    return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${size}" fill="${colour}" text-anchor="${anchor || "middle"}" font-style="italic">${text}</text>`;
+  };
+  const SEA = "#9fc6d8", LAND = "#e3ece7", SMALL = "#b9d3de";
+  parts.push(lab(-168, 45, "Pacific Ocean", 11, SEA));
+  parts.push(lab(-178, 57.5, "Bering Sea", 9.5, SEA));
+  parts.push(lab(-163, 81, "Arctic Ocean", 11, SEA));
+  parts.push(lab(-145, 73.2, "Beaufort Sea", 8.5, SMALL));
+  parts.push(lab(-146, 56.3, "Gulf of Alaska", 8.5, SMALL));
+  parts.push(lab(146, 52.5, "Sea of Okhotsk", 8.5, SMALL));
+  parts.push(lab(-146, 61.6, "Alaska", 10, LAND));
+  parts.push(lab(-121, 60.5, "Canada", 10, LAND));
+  parts.push(lab(141, 63.2, "Russia", 10, LAND));
+  parts.push(lab(160, 59.5, "Kamchatka", 8, LAND));
+  parts.push(lab(-176, 50.6, "Aleutian Islands", 7.5, SMALL));
+  parts.push(lab(124, 68.4, "Arctic Circle", 7.5, "rgba(160,210,230,0.85)"));
+  // Chukchi Sea and Bering Strait sit inside the map box: label outside with a thin pointer line
+  const pointer = (fromLL, toLL, text, anchor) => {
+    const [x1, y1] = insetXY(...fromLL), [x2, y2] = insetXY(...toLL);
+    return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#ffffff" stroke-opacity="0.7" stroke-width="0.7"/>` +
+      `<text x="${x1.toFixed(1)}" y="${(y1 + 3).toFixed(1)}" font-size="8.5" fill="#ffffff" text-anchor="${anchor}" font-style="italic">${text}</text>`;
+  };
+  parts.push(pointer([-195, 64.3], [-168.9, 65.8], "Bering Strait", "end"));
+  parts.push(pointer([-196, 72.5], [-171, 69.5], "Chukchi Sea", "end"));
+  const [px, py] = insetXY(0, 90);
+  parts.push(`<path d="M${px - 3},${py}h6M${px},${py - 3}v6" stroke="#ffffff" stroke-opacity="0.7" stroke-width="0.9"/><text x="${px + 5}" y="${py + 3}" font-size="7.5" fill="${SMALL}" font-style="italic">North Pole</text>`);
+  parts.push(`<g id="insetCam"></g>`);
+  svg.innerHTML = parts.join("");
+  document.getElementById("inset").style.display = "block";
+  fitViewsPanel();
+}
+
+// keep the right-hand button panel above the bottom-right corner box (scrolls if the window is small)
+function fitViewsPanel() {
+  const views = document.getElementById("views");
+  const corner = document.getElementById("corner");
+  views.style.maxHeight = Math.max(120, window.innerHeight - corner.offsetHeight - 14 - 14 - 10) + "px";
+  views.style.overflowY = "auto";
+}
+window.addEventListener("resize", () => fitViewsPanel());
+
+function updateInset(vs) {
+  if (!inset || !vs) return;
+  const pos = vs.position || [0, 0, 0];
+  const xm = vs.longitude * Math.PI / 180 * EARTH_R + pos[0];
+  const ym = Math.log(Math.tan(Math.PI / 4 + vs.latitude * Math.PI / 360)) * EARTH_R + pos[1];
+  const b = vs.bearing * Math.PI / 180;
+  const here = insetXY(...localToLonLat(xm, ym));
+  const ahead = insetXY(...localToLonLat(xm + Math.sin(b) * 100000, ym + Math.cos(b) * 100000));
+  const dir = Math.atan2(ahead[0] - here[0], -(ahead[1] - here[1]));  // clockwise from up, in inset pixels
+  const w = INSET_WEDGE_DEG * Math.PI / 180;
+  const tip = a => [here[0] + Math.sin(a) * INSET_WEDGE_PX, here[1] - Math.cos(a) * INSET_WEDGE_PX];
+  const [ax, ay] = tip(dir - w);
+  const [bx, by] = tip(dir + w);
+  document.getElementById("insetCam").innerHTML =
+    `<path d="M${here[0].toFixed(1)},${here[1].toFixed(1)}L${ax.toFixed(1)},${ay.toFixed(1)}A${INSET_WEDGE_PX},${INSET_WEDGE_PX} 0 0 1 ${bx.toFixed(1)},${by.toFixed(1)}Z" fill="rgba(255,138,106,0.45)" stroke="${CHART_YEAR_MARK}" stroke-width="0.8"/>` +
+    `<circle cx="${here[0].toFixed(1)}" cy="${here[1].toFixed(1)}" r="2.8" fill="${CHART_YEAR_MARK}" stroke="#fff" stroke-width="0.8"/>`;
+}
+
+function drawChart(shownYear) {
+  const svg = document.getElementById("chartSvg");
+  const W = Number(svg.getAttribute("width"));
+  const H = Number(svg.getAttribute("height"));
+  const L = 30;
+  const R = 6;
+  const T = 8;
+  const B = 18;
+  const sx = y => L + (y - CHART_YEARS[0]) / (CHART_YEARS[1] - CHART_YEARS[0]) * (W - L - R);
+  const sy = v => T + (CHART_SV[1] - v) / (CHART_SV[1] - CHART_SV[0]) * (H - T - B);
+  const n = MOORING_ANNUAL.length;
+  const mx = MOORING_ANNUAL.reduce((a, d) => a + d[0], 0) / n;
+  const my = MOORING_ANNUAL.reduce((a, d) => a + d[1], 0) / n;
+  const sxy = MOORING_ANNUAL.reduce((a, d) => a + (d[0] - mx) * (d[1] - my), 0);
+  const sxx = MOORING_ANNUAL.reduce((a, d) => a + (d[0] - mx) * (d[0] - mx), 0);
+  const slope = sxy / sxx;
+  const y0 = MOORING_ANNUAL[0][0];
+  const y1 = MOORING_ANNUAL[n - 1][0];
+  const t0 = my + slope * (y0 - mx);
+  const t1 = my + slope * (y1 - mx);
+  document.getElementById("trendText").textContent = "+" + (slope * 10).toFixed(3) + " Sv per decade, " + t0.toFixed(2) + " to " + t1.toFixed(2) + " Sv (+" + Math.round((t1 / t0 - 1) * 100) + "%)";
+  const parts = [];
+  parts.push(`<rect x="${sx(1991.5)}" y="${T}" width="${sx(1997.5) - sx(1991.5)}" height="${H - T - B}" fill="rgba(255,255,255,0.06)"/>`);
+  parts.push(`<text x="${(sx(1991.5) + sx(1997.5)) / 2}" y="${sy(0.6)}" font-size="9" fill="#9fb7c6" text-anchor="middle">no data</text>`);
+  for (const v of [0.5, 1.0, 1.5]) {
+    parts.push(`<line x1="${L}" x2="${W - R}" y1="${sy(v)}" y2="${sy(v)}" stroke="rgba(255,255,255,0.12)"/>`);
+    parts.push(`<text x="${L - 4}" y="${sy(v) + 3}" font-size="10" fill="#9fb7c6" text-anchor="end">${v.toFixed(1)}</text>`);
+  }
+  for (const y of [1980, 1990, 2000, 2010, 2020]) parts.push(`<text x="${sx(y)}" y="${H - 4}" font-size="10" fill="#9fb7c6" text-anchor="middle">${y}</text>`);
+  if (shownYear) {
+    parts.push(`<line x1="${sx(shownYear)}" x2="${sx(shownYear)}" y1="${T}" y2="${H - B}" stroke="${CHART_YEAR_MARK}" stroke-width="2"/>`);
+    parts.push(`<text x="${sx(shownYear) + (sx(shownYear) > W - 70 ? -3 : 3)}" y="${T + 9}" font-size="9" fill="${CHART_YEAR_MARK}" text-anchor="${sx(shownYear) > W - 70 ? "end" : "start"}">shown: ${shownYear}</text>`);
+  }
+  for (const d of MOORING_ANNUAL) parts.push(`<line x1="${sx(d[0])}" x2="${sx(d[0])}" y1="${sy(d[1] - d[2])}" y2="${sy(d[1] + d[2])}" stroke="${CHART_LINE}" stroke-opacity="0.35"/>`);
+  const runs = [];
+  let run = [];
+  for (const d of MOORING_ANNUAL) {
+    if (run.length && d[0] !== run[run.length - 1][0] + 1) {
+      runs.push(run);
+      run = [];
+    }
+    run.push(d);
+  }
+  runs.push(run);
+  for (const r of runs) parts.push(`<polyline points="${r.map(d => sx(d[0]) + "," + sy(d[1])).join(" ")}" fill="none" stroke="${CHART_LINE}" stroke-width="1.5"/>`);
+  parts.push(`<line x1="${sx(y0)}" x2="${sx(y1)}" y1="${sy(t0)}" y2="${sy(t1)}" stroke="${CHART_TREND}" stroke-width="1.5" stroke-dasharray="4 3"/>`);
+  for (const d of MOORING_ANNUAL) parts.push(`<circle cx="${sx(d[0])}" cy="${sy(d[1])}" r="2.2" fill="${CHART_LINE}"><title>${d[0]}: ${d[1].toFixed(2)} Sv</title></circle>`);
+  const top = MOORING_ANNUAL.reduce((a, d) => d[1] > a[1] ? d : a);
+  const low = MOORING_ANNUAL.reduce((a, d) => d[1] < a[1] ? d : a);
+  parts.push(`<text x="${sx(top[0])}" y="${sy(top[1]) - 6}" font-size="9" fill="#e6edf3" text-anchor="middle">${top[0]}: ${top[1].toFixed(2)}</text>`);
+  parts.push(`<text x="${sx(low[0]) + 5}" y="${sy(low[1]) + 4}" font-size="9" fill="#e6edf3" text-anchor="start">${low[0]}: ${low[1].toFixed(2)}</text>`);
+  svg.innerHTML = parts.join("");
+}
+
+async function main() {
+  meta = await (await fetch(DATA_DIR + "bering_meta.json")).json();
+  heightGrid = await loadHeights(DATA_DIR + meta.height_png);
+  document.getElementById("exagNote").textContent = "Depths are exaggerated " + meta.seabed_exaggeration + " times and land heights " + meta.land_exaggeration + " times. The strait is only about 50 m deep but 82 km wide; without exaggeration the water would be a thin film.";
+  texture = await tintedTexture(DATA_DIR + meta.texture_png);
+  fogUnder = new HazeExtension({ start: HAZE_START_M, end: HAZE_END_M, max: 1, colour: UNDER_BACKGROUND });
+  fogAbove = new HazeExtension({ start: HAZE_ABOVE_START_M, end: HAZE_ABOVE_END_M, max: HAZE_ABOVE_MAX, colour: ABOVE_BACKGROUND });
+  const yb = document.getElementById("yearButtons");
+  for (const y of TRACK_YEARS) {
+    const b = document.createElement("button");
+    b.id = "y_" + y;
+    b.textContent = y;
+    if (y >= ANALYSIS_FROM_YEAR) b.classList.add("analysis");
+    b.addEventListener("click", () => setYear(y));
+    yb.appendChild(b);
+  }
+  const mb = document.getElementById("monthButtons");
+  for (const m of TRACK_MONTHS) {
+    const b = document.createElement("button");
+    b.id = "m_" + m;
+    b.textContent = MONTH_NAMES[m - 1];
+    b.addEventListener("click", () => setMonth(m));
+    mb.appendChild(b);
+  }
+  iceIndex = await loadIceIndex();
+  if (iceIndex) {
+    document.getElementById("iceControls").style.display = "block";
+    document.getElementById("iceChart").style.display = "block";
+    document.getElementById("ice_on").addEventListener("click", () => setIce(true));
+    document.getElementById("ice_off").addEventListener("click", () => setIce(false));
+    setIce(ICE_START_ON);
+  }
+  await setYear(START_YEAR);
+
+  const [w, s, e, n] = meta.bounds;
+  surfaceData = [{ polygon: [[w, s, 0], [e, s, 0], [e, n, 0], [w, n, 0]] }];
+  labelLayer = new deck.TextLayer({ id: "labels", data: meta.labels.filter(d => d.kind !== "region"), getPosition: d => [d.position[0], d.position[1], 600], getText: d => d.name, getSize: 13, getColor: [255, 255, 255], outlineWidth: 3, outlineColor: [0, 0, 0, 200], fontSettings: { sdf: true }, fontWeight: 600, parameters: { depthCompare: "always" } });
+  staticLayers = [labelLayer];
+
+  viewState = viewFor(START_VIEW);
+  deckgl = new deck.Deck({
+    parent: document.getElementById("map"),
+    views: new deck.FirstPersonView({ fovy: FOV, near: 0.5, far: 3000000, controller: { scrollZoom: false, keyboard: false, doubleClickZoom: false } }),
+    viewState,
+    onViewStateChange: ({ viewState: vs }) => { viewState = vs; deckgl.setProps({ viewState: vs }); showDepth(vs); updateInset(vs); },
+    parameters: { clearColor: ABOVE_BACKGROUND.map(c => c / 255).concat(1) },
+    layers: staticLayers
+  });
+  for (const k of Object.keys(VIEWPOINTS)) document.getElementById("v_" + k).addEventListener("click", () => setView(k));
+  for (const k of Object.keys(DEPTH_BANDS)) document.getElementById("d_" + k).addEventListener("click", () => setBand(k));
+  document.getElementById("c_depth").addEventListener("click", () => setColourMode("depth"));
+  document.getElementById("c_temp").addEventListener("click", () => setColourMode("temp"));
+  setColourMode(START_COLOUR);
+  document.getElementById("v_" + START_VIEW).classList.add("on");
+  document.getElementById("copyView").addEventListener("click", copyView);
+  window.addEventListener("keydown", onKey);
+  if (!SHOW_CAMERA_READOUT) document.getElementById("depth").style.display = "none";
+  if (SHOW_CASE_STUDY_LINK) document.getElementById("caseStudyLink").style.display = "block";
+  document.getElementById("map").addEventListener("wheel", onWheel, { passive: false });
+  showDepth(viewState);
+  await loadInset();
+  updateInset(viewState);
+  requestAnimationFrame(frame);
+}
+
+main();
+</script>
+</body>
+</html>
