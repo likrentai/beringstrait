@@ -1,0 +1,181 @@
+{
+ "bounds": [
+  -6.956554,
+  -3.004385,
+  6.103154,
+  5.641266
+ ],
+ "local_crs": "+proj=laea +lat_0=67 +lon_0=-169 +datum=WGS84 +units=m +no_defs",
+ "local_bounds_m": [
+  -774400.0,
+  -334600.0,
+  679400.0,
+  629000.0
+ ],
+ "height_png": "bering_height.png",
+ "texture_png": "bering_texture.png",
+ "decoder": {
+  "rScaler": 6553.6,
+  "gScaler": 25.6,
+  "bScaler": 0.1,
+  "offset": -100000
+ },
+ "seabed_exaggeration": 40,
+ "land_exaggeration": 4,
+ "deep_limit_m": -300,
+ "height_res_m": 1000,
+ "texture_res_m": 500,
+ "source": "IBCAO 5.2 (2026), 200 m grid, averaged",
+ "labels": [
+  {
+   "name": "Cape Dezhnev",
+   "kind": "cape",
+   "position": [
+    -0.26429,
+    -0.920198
+   ],
+   "real_lat": 66.08,
+   "real_lon": -169.65
+  },
+  {
+   "name": "Cape Prince of Wales",
+   "kind": "cape",
+   "position": [
+    0.376399,
+    -1.359464
+   ],
+   "real_lat": 65.64,
+   "real_lon": -168.09
+  },
+  {
+   "name": "Big Diomede (Russia)",
+   "kind": "island",
+   "position": [
+    -0.024684,
+    -1.222004
+   ],
+   "real_lat": 65.78,
+   "real_lon": -169.06
+  },
+  {
+   "name": "Little Diomede (USA)",
+   "kind": "island",
+   "position": [
+    0.028832,
+    -1.252042
+   ],
+   "real_lat": 65.75,
+   "real_lon": -168.93
+  },
+  {
+   "name": "Wrangel Island",
+   "kind": "island",
+   "position": [
+    -3.465966,
+    4.556567
+   ],
+   "real_lat": 71.25,
+   "real_lon": -179.8
+  },
+  {
+   "name": "Herald Island",
+   "kind": "island",
+   "position": [
+    -2.136604,
+    4.498883
+   ],
+   "real_lat": 71.38,
+   "real_lon": -175.68
+  },
+  {
+   "name": "Point Hope",
+   "kind": "town",
+   "position": [
+    0.81391,
+    1.366801
+   ],
+   "real_lat": 68.35,
+   "real_lon": -166.8
+  },
+  {
+   "name": "Utqiagvik (Barrow)",
+   "kind": "town",
+   "position": [
+    3.904615,
+    4.679672
+   ],
+   "real_lat": 71.29,
+   "real_lon": -156.79
+  },
+  {
+   "name": "Kotzebue",
+   "kind": "town",
+   "position": [
+    2.513468,
+    0.029015
+   ],
+   "real_lat": 66.9,
+   "real_lon": -162.6
+  },
+  {
+   "name": "Nome",
+   "kind": "town",
+   "position": [
+    1.549196,
+    -2.45879
+   ],
+   "real_lat": 64.5,
+   "real_lon": -165.41
+  },
+  {
+   "name": "Uelen",
+   "kind": "town",
+   "position": [
+    -0.328305,
+    -0.839318
+   ],
+   "real_lat": 66.16,
+   "real_lon": -169.81
+  },
+  {
+   "name": "Chukchi Sea",
+   "kind": "sea",
+   "position": [
+    -0.524503,
+    2.610312
+   ],
+   "real_lat": 69.6,
+   "real_lon": -170.5
+  },
+  {
+   "name": "Bering Sea",
+   "kind": "sea",
+   "position": [
+    -0.779941,
+    -2.592012
+   ],
+   "real_lat": 64.4,
+   "real_lon": -170.8
+  },
+  {
+   "name": "Chukotka (Russia)",
+   "kind": "region",
+   "position": [
+    -2.979517,
+    -0.221272
+   ],
+   "real_lat": 66.6,
+   "real_lon": -176.5
+  },
+  {
+   "name": "Alaska (USA)",
+   "kind": "region",
+   "position": [
+    4.043502,
+    0.642386
+   ],
+   "real_lat": 67.3,
+   "real_lon": -158.5
+  }
+ ]
+}
