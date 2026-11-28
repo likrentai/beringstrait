@@ -1,0 +1,15 @@
+{
+ "year": 2015,
+ "month": 11,
+ "n": 7995,
+ "total_points": 337835,
+ "record_hours": 3.0,
+ "month_hours": 720.0,
+ "xy_unit_m": 100,
+ "z_unit": "baked metres (seabed exaggeration included)",
+ "seabed_exaggeration": 40,
+ "snapshots": 15,
+ "first_snapshot": "2015-11-01",
+ "last_snapshot": "2015-11-29",
+ "source": "HYCOM GOFS 3.1 reanalysis GLBv0.08 expt_53.X; particles keep their fraction of the local water depth (no vertical motion)"
+}
