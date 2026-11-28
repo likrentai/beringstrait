@@ -1,0 +1,15 @@
+{
+ "year": 2023,
+ "month": 8,
+ "n": 7991,
+ "total_points": 335658,
+ "record_hours": 3.0,
+ "month_hours": 768.0,
+ "xy_unit_m": 100,
+ "z_unit": "baked metres (seabed exaggeration included)",
+ "seabed_exaggeration": 40,
+ "snapshots": 16,
+ "first_snapshot": "2023-08-01",
+ "last_snapshot": "2023-08-31",
+ "source": "HYCOM GOFS 3.1 analysis GLBy0.08 expt_93.0; particles keep their fraction of the local water depth (no vertical motion)"
+}
